@@ -44,6 +44,7 @@ import { NsfwDetector } from '../detectors/NsfwDetector';
 import type { ExtendedNormalizedMessage } from '../../whatsapp/MessageNormalizer';
 import type { SocketManager } from '../../whatsapp/SocketManager';
 import type { GroupCache } from '../../whatsapp/GroupCache';
+import { jidToPhone } from '../../utils/jid';
 import type { EventBus } from '../../events/EventBus';
 import type { AntiContext } from '../types/Anti';
 import { logger } from '../../logger/Logger';
@@ -235,7 +236,7 @@ export class AntiEngine {
         sessionId,
         chatJid: callerJid,
         chatType: 'group' as const,
-        sender: { jid: callerJid, phone: callerJid.split('@')[0] ?? '', isBot: false },
+        sender: { jid: callerJid, phone: jidToPhone(callerJid), isBot: false },
         type: 'call' as never,
         mentions: [],
         timestamp: Math.floor(Date.now() / 1000),

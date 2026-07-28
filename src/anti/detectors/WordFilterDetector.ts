@@ -44,18 +44,26 @@ export class WordFilterDetector implements BaseDetector {
     ].filter((s): s is string => !!s);
 
     for (const surface of surfaces) {
-      const matched = this.findMatch(surface, allWords, mode, caseSensitive);
+      // Normalize zero-width / invisible chars before matching (prevents evasion)
+      const normalized = this.stripInvisible(surface);
+      const matched = this.findMatch(normalized, allWords, mode, caseSensitive);
       if (matched) {
         return matchResult('words', Date.now() - start, {
           confidence: 1,
           matchedRule: mode,
-          metadata: { matchedWord: matched, surface: surface.slice(0, 100) },
+          metadata: { matchedWord: matched, surface: normalized.slice(0, 100) },
           reason: `Prohibited word: "${matched}"`,
         });
       }
     }
 
     return noMatch('words', Date.now() - start);
+  }
+
+  /** Strip zero-width and invisible characters to prevent filter evasion. */
+  private stripInvisible(text: string): string {
+    // eslint-disable-next-line no-control-regex
+    return text.replace(/[\u200B-\u200D\uFEFF\u00AD\u2060\u180E]/g, '');
   }
 
   private findMatch(text: string, words: string[], mode: MatchMode, caseSensitive: boolean): string | null {

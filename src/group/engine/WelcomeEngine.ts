@@ -14,6 +14,7 @@ import type { EventBus } from '../../events/EventBus';
 import type { GroupTemplateEngine } from './GroupTemplateEngine';
 import type { IntroCardService } from '../services/IntroCardService';
 import type { WelcomeConfig, GoodbyeConfig } from '../types/Group';
+import { jidToPhone } from '../../utils/jid';
 import { logger } from '../../logger/Logger';
 
 const log = logger.child('WelcomeEngine');
@@ -68,8 +69,8 @@ export class WelcomeEngine {
 
     const meta = this.groupCache.get(groupJid);
     const vars = {
-      mention: `@${newMemberJid.split('@')[0]}`,
-      sender: newMemberJid.split('@')[0] ?? '',
+      mention: `@${jidToPhone(newMemberJid)}`,
+      sender: jidToPhone(newMemberJid),
       gcname: meta?.subject ?? 'this group',
       membercount: String(meta?.participants.length ?? 0),
       desc: meta?.description ?? '',
@@ -104,8 +105,8 @@ export class WelcomeEngine {
 
     const meta = this.groupCache.get(groupJid);
     const vars = {
-      mention: `@${leftMemberJid.split('@')[0]}`,
-      sender: leftMemberJid.split('@')[0] ?? '',
+      mention: `@${jidToPhone(leftMemberJid)}`,
+      sender: jidToPhone(leftMemberJid),
       gcname: meta?.subject ?? 'this group',
       membercount: String(meta?.participants.length ?? 0),
       desc: meta?.description ?? '',

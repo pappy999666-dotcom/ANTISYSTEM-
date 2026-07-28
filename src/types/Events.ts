@@ -155,7 +155,7 @@ export interface PappybotEvents {
   'ai:memory_cleared':        { sessionId: string; count: number };
   'ai:automation_created':    { sessionId: string; taskId: string; name: string; cron: string };
   'ai:automation_cancelled':  { sessionId: string; taskId: string };
-  'ai:automation_triggered':  { sessionId: string; taskId: string; name: string };
+  'ai:automation_triggered':  { sessionId: string; taskId: string; name: string; actionType: string; actionData: Record<string, unknown>; targetJid?: string };
 
   // ── Group Status Engine ────────────────────────────────────────────────────────────
   'status:queued':            { sessionId: string; statusId: string; contentType: string };

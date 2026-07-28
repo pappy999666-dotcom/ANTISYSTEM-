@@ -4,7 +4,7 @@
  * Pure helper functions for resolving WhatsApp-level permissions.
  * These operate on NormalizedMessage + GroupCache — no Baileys internals.
  *
- * Future prompts: wire these into CommandEngine's permission check pipeline.
+ * These helpers are used by CommandEngine's permission check pipeline and command handlers.
  */
 
 import type { NormalizedMessage } from '../types/Message';

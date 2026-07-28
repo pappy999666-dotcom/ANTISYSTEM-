@@ -93,7 +93,7 @@ export class TemplateEngine {
     action?: string;
     extra?: Record<string, string>;
   }): Record<string, string> {
-    const phone = opts.senderJid.split('@')[0] ?? opts.senderJid;
+    const phone = opts.senderJid.includes('@') ? opts.senderJid.split('@')[0]!.split(':')[0]! : opts.senderJid;
     return {
       mention: `@${phone}`,
       sender: phone,

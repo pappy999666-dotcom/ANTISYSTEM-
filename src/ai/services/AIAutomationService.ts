@@ -8,6 +8,7 @@
 import { BaseService } from '../../services/BaseService';
 import type { AIAutomationRepository } from '../repository/AIAutomationRepository';
 import type { SchedulerService } from '../../schedulers/SchedulerService';
+import type { EventBus } from '../../events/EventBus';
 import type { AIAutomationTask, AIActionType } from '../types/AITypes';
 import { parseNaturalTime } from '../utils/TimeParser';
 import { logger } from '../../logger/Logger';
@@ -17,7 +18,8 @@ const log = logger.child('AIAutomationService');
 export class AIAutomationService extends BaseService {
   constructor(
     private readonly repo: AIAutomationRepository,
-    private readonly scheduler: SchedulerService
+    private readonly scheduler: SchedulerService,
+    private readonly bus: EventBus
   ) {
     super();
   }
@@ -150,9 +152,16 @@ export class AIAutomationService extends BaseService {
       fn: async () => {
         log.info('Running AI automation', { id: task.id, name: task.name });
         await this.repo.recordRun(task.id);
-        // The executor needs message context; for scheduled tasks we emit a synthetic event
-        // The AIMessageListener will handle 'ai:automation_trigger' events
-        log.debug('Automation executed', { id: task.id });
+        // Emit trigger event so AIMessageListener (or any subscriber) can execute the plan
+        await this.bus.emit('ai:automation_triggered', {
+          taskId: task.id,
+          sessionId: task.sessionId,
+          name: task.name,
+          actionType: task.actionType,
+          actionData: task.actionData,
+          targetJid: task.targetJid,
+        });
+        log.debug('Automation trigger emitted', { id: task.id });
       },
     });
   }

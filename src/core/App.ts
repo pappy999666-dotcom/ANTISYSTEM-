@@ -131,6 +131,8 @@ export class App {
     // ── 8. Response Engine ─────────────────────────────────────────────────
     const responseEngine = new ResponseEngine();
     container.register('ResponseEngine', responseEngine);
+    // Wire ResponseEngine into CommandEngine so commands can reply to messages
+    commandEngine.setResponseEngine(responseEngine);
 
     // ── 9. Message Pipeline ────────────────────────────────────────────────
     const pipeline = new MessagePipeline(eventBus, middlewareEngine, commandEngine);

@@ -75,7 +75,10 @@ export class ActionEngine {
 
   private async doDelete(ctx: AntiContext): Promise<void> {
     const sock = this.socketManager.getSocket(ctx.sessionId);
-    if (!sock) return;
+    if (!sock) {
+      log.warn('Delete skipped — no socket', { sessionId: ctx.sessionId });
+      return;
+    }
     try {
       await sock.sendMessage(ctx.groupJid, { delete: ctx.messageKey });
       await this.bus.emit('anti:message_deleted', {
@@ -86,6 +89,7 @@ export class ActionEngine {
       });
     } catch (err) {
       log.warn('Delete failed', { sessionId: ctx.sessionId, messageId: ctx.messageId, error: String(err) });
+      throw err; // propagate so execute() can report success: false
     }
   }
 
@@ -120,12 +124,15 @@ export class ActionEngine {
       await this.doKick(ctx);
     }
 
-    void templateKey; // used above
+    void templateKey; // referenced in warnMsg resolution above; void suppresses unused-variable lint
   }
 
   private async doKick(ctx: AntiContext): Promise<void> {
     const sock = this.socketManager.getSocket(ctx.sessionId);
-    if (!sock) return;
+    if (!sock) {
+      log.warn('Kick skipped — no socket', { sessionId: ctx.sessionId });
+      return;
+    }
     try {
       await sock.groupParticipantsUpdate(ctx.groupJid, [ctx.senderJid], 'remove');
       await this.bus.emit('anti:user_kicked', {
@@ -136,6 +143,7 @@ export class ActionEngine {
       });
     } catch (err) {
       log.warn('Kick failed', { sessionId: ctx.sessionId, senderJid: ctx.senderJid, error: String(err) });
+      throw err; // propagate so execute() can report success: false
     }
   }
 

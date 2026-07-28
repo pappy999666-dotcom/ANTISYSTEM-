@@ -8,9 +8,9 @@
  *   4. Start the session → scan QR or resume from saved auth
  *   5. Register graceful shutdown handlers
  *
- * Future prompts add Telegram control panel, web dashboard,
- * AI assistant, and group management by importing from this
- * established foundation — never modifying core directly.
+ * All subsystems (Telegram panel, web dashboard, AI assistant,
+ * group management, anti system, gstatus) are initialized from App.ts.
+ * Add new subsystems there — never modify this bootstrap entry point.
  */
 
 import 'dotenv/config';
@@ -33,7 +33,7 @@ async function main(): Promise<void> {
   if (!ownerNumber) {
     log.warn(
       'GLOBAL_OWNER_NUMBER not set. Set it in .env to auto-start a session.\n' +
-      'You can start sessions manually via the API or Telegram panel (future prompts).'
+      'You can start sessions manually via the Web API (/api/sessions) or Telegram panel.'
     );
     return;
   }

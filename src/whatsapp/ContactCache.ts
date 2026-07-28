@@ -9,6 +9,7 @@
  */
 
 import type { CachedContact } from '../types/Contact';
+import { jidToPhone } from '../utils/jid';
 import { logger } from '../logger/Logger';
 
 const log = logger.child('ContactCache');
@@ -43,7 +44,7 @@ export class ContactCache {
   /** Best available display name for a JID. Falls back to the phone number portion. */
   getDisplayName(jid: string): string {
     const contact = this.get(jid);
-    return contact?.displayName ?? contact?.pushName ?? jid.split('@')[0] ?? jid;
+    return contact?.displayName ?? contact?.pushName ?? jidToPhone(jid);
   }
 
   getAll(): CachedContact[] {

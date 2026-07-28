@@ -70,7 +70,7 @@ export class AIPlugin extends BasePlugin {
     const providerService = new AIProviderService(configService);
     const plannerService = new AIPlannerService(providerService, memoryService);
     const executorService = new AIExecutorService();
-    this.automationService = new AIAutomationService(automationRepo, ctx.scheduler);
+    this.automationService = new AIAutomationService(automationRepo, ctx.scheduler, ctx.bus);
 
     // Register in container for cross-module access (dashboard, etc.)
     container.register('AIConfigService', configService);

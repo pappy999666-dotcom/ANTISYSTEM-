@@ -18,6 +18,7 @@ import type { SessionRuntime } from '../types/Session';
 import type { EventBus } from '../events/EventBus';
 import type { CacheManager } from '../cache/CacheManager';
 import type { PermissionManager } from '../permissions/PermissionManager';
+import type { ResponseEngine } from './ResponseEngine';
 import { ROLES } from '../types/Permissions';
 import { logger } from '../logger/Logger';
 import { DEFAULT_COOLDOWN_MS, DEFAULT_PREFIX } from '../constants';
@@ -35,6 +36,7 @@ export class CommandEngine {
   private readonly cache: CacheManager;
   private readonly permissions: PermissionManager;
   private readonly prefix: string;
+  private response?: ResponseEngine;
 
   constructor(
     bus: EventBus,
@@ -46,6 +48,14 @@ export class CommandEngine {
     this.cache = cache;
     this.permissions = permissions;
     this.prefix = prefix;
+  }
+
+  /**
+   * Inject the ResponseEngine so commands can reply through it.
+   * Must be called during bootstrap after ResponseEngine is created.
+   */
+  setResponseEngine(r: ResponseEngine): void {
+    this.response = r;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -163,9 +173,13 @@ export class CommandEngine {
     const rawArgs = rest.join(' ');
     const args = this.parseArgs(rawArgs);
 
-    // Placeholder reply/send; will be replaced by ResponseEngine wiring
+    // Wire reply/send through the ResponseEngine
     const replyFn = async (text: string) => {
-      log.debug('[reply stub]', { text: text.slice(0, 80) });
+      if (this.response) {
+        await this.response.sendText(message.sessionId, message.chatJid, text, message.id);
+      } else {
+        log.warn('ResponseEngine not wired — reply dropped', { sessionId: message.sessionId });
+      }
     };
 
     const ctx: CommandContext = {

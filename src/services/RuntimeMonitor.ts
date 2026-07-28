@@ -12,11 +12,11 @@
  *   - Cache statistics
  *
  * Data is gathered on demand and emitted as monitor:snapshot events.
- * Future prompts (Telegram panel, Web dashboard) subscribe to those events.
+ * The Telegram panel and Web dashboard subscribe to those events.
  *
  * Extension points:
- *   - Future prompt: persist snapshots to database for trend graphs.
- *   - Future prompt: emit alerts when thresholds are exceeded.
+ *   - Persist snapshots to database for trend graphs.
+ *   - Emit alerts when configurable thresholds are exceeded.
  */
 
 import type { SocketManager } from '../whatsapp/SocketManager';
