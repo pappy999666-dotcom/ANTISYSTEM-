@@ -196,77 +196,77 @@ export class GroupEngine {
     const sock = this.socketManager.requireSocket(sessionId);
     await sock.groupLeave(groupJid);
     this.groupCache.invalidate(groupJid);
-    await this.bus.emit('group:updated', { sessionId, groupJid });
-    log.info('Left group', { sessionId, groupJid });
-  }
+        await this.bus.emit('group:updated', { sessionId, groupJid });
+            log.info('Left group', { sessionId, groupJid });
+              }
 
-  // ── Settings ──────────────────────────────────────────────────────────────
+                // ── Settings ──────────────────────────────────────────────────────────────
 
-  async setAnnounce(sessionId: string, groupJid: string, enable: boolean): Promise<void> {
-    const sock = this.socketManager.requireSocket(sessionId);
-    await sock.groupSettingUpdate(groupJid, enable ? 'announcement' : 'not_announcement');
-    this.groupCache.patch(groupJid, { announce: enable });
-    await this.bus.emit('group:updated', { sessionId, groupJid });
-  }
+                  async setAnnounce(sessionId: string, groupJid: string, enable: boolean): Promise<void> {
+                      const sock = this.socketManager.requireSocket(sessionId);
+                          await sock.groupSettingUpdate(groupJid, enable ? 'announcement' : 'not_announcement');
+                              this.groupCache.patch(groupJid, { announce: enable });
+                                  await this.bus.emit('group:updated', { sessionId, groupJid });
+                                    }
 
-  async setRestrict(sessionId: string, groupJid: string, enable: boolean): Promise<void> {
-    const sock = this.socketManager.requireSocket(sessionId);
-    await sock.groupSettingUpdate(groupJid, enable ? 'locked' : 'unlocked');
-    this.groupCache.patch(groupJid, { restrict: enable });
-    await this.bus.emit('group:updated', { sessionId, groupJid });
-  }
+                                      async setRestrict(sessionId: string, groupJid: string, enable: boolean): Promise<void> {
+                                          const sock = this.socketManager.requireSocket(sessionId);
+                                              await sock.groupSettingUpdate(groupJid, enable ? 'locked' : 'unlocked');
+                                                  this.groupCache.patch(groupJid, { restrict: enable });
+                                                      await this.bus.emit('group:updated', { sessionId, groupJid });
+                                                        }
 
-  async setJoinApproval(sessionId: string, groupJid: string, enable: boolean): Promise<void> {
-    const sock = this.socketManager.requireSocket(sessionId);
-    await sock.groupMemberAddMode(groupJid, enable ? 'approval' : 'all_member_add');
-    this.groupCache.patch(groupJid, { joinApprovalMode: enable });
-    await this.bus.emit('group:updated', { sessionId, groupJid });
-  }
+                                                          async setJoinApproval(sessionId: string, groupJid: string, enable: boolean): Promise<void> {
+                                                              const sock = this.socketManager.requireSocket(sessionId);
+                                                                  await sock.groupMemberAddMode(groupJid, enable ? 'approval' : 'all_member_add');
+                                                                      this.groupCache.patch(groupJid, { joinApprovalMode: enable });
+                                                                          await this.bus.emit('group:updated', { sessionId, groupJid });
+                                                                            }
 
-  async setDisappearingMessages(sessionId: string, groupJid: string, duration: number): Promise<void> {
-    const sock = this.socketManager.requireSocket(sessionId);
-    await sock.groupToggleEphemeral(groupJid, duration);
-    this.groupCache.patch(groupJid, { ephemeralDuration: duration });
-    await this.bus.emit('group:updated', { sessionId, groupJid });
-  }
+                                                                              async setDisappearingMessages(sessionId: string, groupJid: string, duration: number): Promise<void> {
+                                                                                  const sock = this.socketManager.requireSocket(sessionId);
+                                                                                      await sock.groupToggleEphemeral(groupJid, duration);
+                                                                                          this.groupCache.patch(groupJid, { ephemeralDuration: duration });
+                                                                                              await this.bus.emit('group:updated', { sessionId, groupJid });
+                                                                                                }
 
-  // ── Profile info ──────────────────────────────────────────────────────────
+                                                                                                  // ── Profile info ──────────────────────────────────────────────────────────
 
-  async fetchProfilePicture(sessionId: string, jid: string): Promise<string | undefined> {
-    const sock = this.socketManager.getSocket(sessionId);
-    if (!sock) return undefined;
-    try {
-      return await sock.profilePictureUrl(normalizeJid(jid), 'image') as string;
-    } catch { return undefined; }
-  }
+                                                                                                    async fetchProfilePicture(sessionId: string, jid: string): Promise<string | undefined> {
+                                                                                                        const sock = this.socketManager.getSocket(sessionId);
+                                                                                                            if (!sock) return undefined;
+                                                                                                                try {
+                                                                                                                      return await sock.profilePictureUrl(normalizeJid(jid), 'image') as string;
+                                                                                                                          } catch { return undefined; }
+                                                                                                                            }
 
-  async fetchStatus(sessionId: string, jid: string): Promise<string | undefined> {
-    const sock = this.socketManager.getSocket(sessionId);
-    if (!sock) return undefined;
-    try {
-      const r = await sock.fetchStatus(normalizeJid(jid)) as Record<string, unknown> | undefined;
-      return r?.['status'] as string | undefined;
-    } catch { return undefined; }
-  }
+                                                                                                                              async fetchStatus(sessionId: string, jid: string): Promise<string | undefined> {
+                                                                                                                                  const sock = this.socketManager.getSocket(sessionId);
+                                                                                                                                      if (!sock) return undefined;
+                                                                                                                                          try {
+                                                                                                                                                const r = await sock.fetchStatus(normalizeJid(jid)) as Record<string, unknown> | undefined;
+                                                                                                                                                      return r?.['status'] as string | undefined;
+                                                                                                                                                          } catch { return undefined; }
+                                                                                                                                                            }
 
-  // ── Private ───────────────────────────────────────────────────────────────
+                                                                                                                                                              // ── Private ───────────────────────────────────────────────────────────────
 
-  private normalizeMetadata(raw: Record<string, unknown>): GroupMetadata {
-    const rawParticipants = (raw['participants'] as Array<Record<string, unknown>>) ?? [];
-    return {
-      id: normalizeJid(raw['id'] as string ?? ''),
-      subject: raw['subject'] as string ?? '',
-      description: raw['desc'] as string | undefined,
-      owner: raw['owner'] ? normalizeJid(raw['owner'] as string) : undefined,
-      participants: rawParticipants.map(p => ({
-        jid: normalizeJid(p['id'] as string ?? ''),
-        isAdmin: (p['admin'] as string | undefined) === 'admin' || (p['admin'] as string | undefined) === 'superadmin',
-        isSuperAdmin: (p['admin'] as string | undefined) === 'superadmin',
-      })),
-      announce: (raw['announce'] as boolean | undefined) ?? false,
-      restrict: (raw['restrict'] as boolean | undefined) ?? false,
-      ephemeralDuration: raw['ephemeralDuration'] as number | undefined,
-      cachedAt: Date.now(),
-    };
-  }
-}
+                                                                                                                                                                private normalizeMetadata(raw: Record<string, unknown>): GroupMetadata {
+                                                                                                                                                                    const rawParticipants = (raw['participants'] as Array<Record<string, unknown>>) ?? [];
+                                                                                                                                                                        return {
+                                                                                                                                                                              id: normalizeJid(raw['id'] as string ?? ''),
+                                                                                                                                                                                    subject: raw['subject'] as string ?? '',
+                                                                                                                                                                                          description: raw['desc'] as string | undefined,
+                                                                                                                                                                                                owner: raw['owner'] ? normalizeJid(raw['owner'] as string) : undefined,
+                                                                                                                                                                                                      participants: rawParticipants.map(p => ({
+                                                                                                                                                                                                              jid: normalizeJid(p['id'] as string ?? ''),
+                                                                                                                                                                                                                      isAdmin: (p['admin'] as string | undefined) === 'admin' || (p['admin'] as string | undefined) === 'superadmin',
+                                                                                                                                                                                                                              isSuperAdmin: (p['admin'] as string | undefined) === 'superadmin',
+                                                                                                                                                                                                                                    })),
+                                                                                                                                                                                                                                          announce: (raw['announce'] as boolean | undefined) ?? false,
+                                                                                                                                                                                                                                                restrict: (raw['restrict'] as boolean | undefined) ?? false,
+                                                                                                                                                                                                                                                      ephemeralDuration: raw['ephemeralDuration'] as number | undefined,
+                                                                                                                                                                                                                                                            cachedAt: Date.now(),
+                                                                                                                                                                                                                                                                };
+                                                                                                                                                                                                                                                                  }
+                                                                                                                                                                                                                                                                  }

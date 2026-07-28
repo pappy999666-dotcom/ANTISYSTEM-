@@ -42,6 +42,7 @@ import { AntiEngine } from '../anti/core/AntiEngine';
 import { AntiMiddleware } from '../anti/core/AntiMiddleware';
 import { GroupManagementPlugin } from '../group/plugin/GroupManagementPlugin';
 import { TelegramBot } from '../telegram/TelegramBot';
+import { WebServer } from '../web/WebServer';
 import type { DatabaseConfig } from '../types/Database';
 
 const log = logger.child('App');
@@ -51,6 +52,7 @@ export class App {
   private isRunning = false;
   private monitor?: RuntimeMonitor;
   private telegramBot?: TelegramBot;
+  private webServer?: WebServer;
 
   /**
    * Initialize all subsystems and register them in the DI container.
@@ -204,6 +206,23 @@ export class App {
       log.warn('TELEGRAM_BOT_TOKEN not set — Telegram panel disabled');
     }
 
+    // ── 18. Web Dashboard ──────────────────────────────────────────────────────────────────
+    const webEnabled = process.env['WEB_ENABLED'] !== 'false';
+    if (webEnabled) {
+      this.webServer = new WebServer(
+        this,
+        sessionManager,
+        this.monitor,
+        eventBus,
+        sharedGroupCache,
+        socketManager,
+        commandEngine
+      );
+      await this.webServer.start();
+      container.register('WebServer', this.webServer);
+      log.info('Web Dashboard started');
+    }
+
     this.isRunning = true;
     log.success('All subsystems initialized');
   }
@@ -254,6 +273,9 @@ export class App {
   async shutdown(): Promise<void> {
     if (!this.isRunning) return;
     log.info('Shutting down PAPPYBOT V2...');
+
+    // Stop web server
+    await this.webServer?.stop();
 
     // Stop Telegram bot
     await this.telegramBot?.stop();
