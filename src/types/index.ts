@@ -11,3 +11,6 @@ export * from './Database';
 export * from './Cache';
 export * from './Events';
 export * from './Permissions';
+export * from './Group';
+export * from './Contact';
+export * from './Media';

@@ -1,0 +1,409 @@
+PAPPYBOT V2 — WHATSAPP CORE ENGINE & @crysnovax/baileys FOUNDATION (PROMPT 2)
+
+You are continuing the development of PAPPYBOT V2. Prompt 1 has already been completed and provides the project architecture. In this prompt, implement only the WhatsApp core engine using @crysnovax/baileys. Do not implement the anti-system, Telegram panel, web dashboard, or AI assistant yet.
+
+Library Requirements
+
+- Use @crysnovax/baileys exclusively.
+- Before implementing any feature, verify that it is supported by the library. Do not invent unsupported APIs or fake behavior.
+- Follow the library's recommended connection lifecycle and message formats.
+- Keep the implementation modular so future prompts can plug into it cleanly.
+
+---
+
+OBJECTIVE
+
+Build a production-grade WhatsApp session engine capable of managing multiple independent WhatsApp accounts with complete isolation.
+
+The engine must be:
+
+- lightweight
+- asynchronous
+- scalable
+- restart-safe
+- memory efficient
+- event-driven
+- production-ready
+
+---
+
+MULTI SESSION ARCHITECTURE
+
+Every paired WhatsApp account is its own isolated workspace.
+
+Each session must maintain:
+
+- Authentication state
+- Socket instance
+- Runtime cache
+- Event listeners
+- Group cache
+- Contact cache
+- Scheduler
+- Configuration
+- Permission state
+
+No session should ever affect another.
+
+---
+
+SOCKET MANAGER
+
+Create a centralized Socket Manager responsible for:
+
+- Creating sockets
+- Destroying sockets
+- Reconnecting sockets
+- Session lookup
+- Runtime health checks
+- Listener attachment
+- Resource cleanup
+
+The Socket Manager must prevent duplicate sockets and duplicate listeners.
+
+---
+
+AUTHENTICATION
+
+Support all authentication methods provided by the library.
+
+Requirements:
+
+- Pairing code flow
+- QR code flow
+- Multi-file authentication storage (or the library's recommended persistent auth method)
+- Session restoration after restart
+- Automatic reconnection when appropriate
+- Clean logout handling
+
+When a session logs out permanently, purge only that session's runtime resources without affecting other sessions.
+
+---
+
+CONNECTION LIFECYCLE
+
+Handle every connection state exposed by the library.
+
+Examples include:
+
+- connecting
+- connected
+- disconnected
+- reconnecting
+- logged out
+- stream replaced
+- connection closed
+- retry required
+- restart required
+
+For every state:
+
+- emit an internal event
+- update runtime status
+- notify dependent services
+- clean resources if necessary
+
+Avoid infinite reconnect loops.
+
+---
+
+ERROR HANDLING
+
+Gracefully handle library errors such as:
+
+- authentication failures
+- invalid session state
+- bad MAC or corrupted session data (when surfaced by the library)
+- network interruptions
+- temporary server failures
+- socket closure
+
+Errors should be logged and surfaced without crashing the application.
+
+---
+
+CLIENT CONFIGURATION
+
+Use the library's supported client/browser configuration.
+
+If the library allows selecting a supported Android or iOS client profile, expose it as a configurable option.
+
+Do not attempt to spoof unsupported identities, bypass platform protections, or claim to evade WhatsApp detection. Only use documented, supported configuration exposed by the library.
+
+---
+
+EVENT REGISTRY
+
+Register handlers for every major event available through the library, including where supported:
+
+- incoming messages
+- outgoing messages
+- message updates
+- message deletions
+- receipt updates
+- presence updates
+- contacts
+- groups
+- participants
+- calls
+- reactions
+- polls
+- newsletters/channels
+- status/group-status related events (if exposed by the library)
+- profile updates
+- block list updates
+- app state synchronization
+
+Unknown or future events should be easy to add without rewriting the core.
+
+---
+
+MESSAGE NORMALIZATION
+
+Create a Message Normalizer.
+
+Every incoming message should be transformed into a consistent internal structure regardless of type.
+
+Normalize:
+
+- text
+- image
+- video
+- audio
+- voice note
+- sticker
+- document
+- contact
+- location
+- poll
+- reaction
+- forwarded messages
+- quoted messages
+- view-once wrappers
+- ephemeral messages
+- interactive messages
+- captions
+- mentions
+- context information
+- link preview metadata (when available)
+
+Future anti modules should never need to inspect raw Baileys payloads directly.
+
+---
+
+MESSAGE CONTEXT
+
+Expose helper methods to retrieve:
+
+- sender JID
+- chat JID
+- message ID
+- quoted message
+- participant
+- admin status
+- owner status
+- timestamp
+- message type
+- media metadata
+- mentions
+- forwarding indicators (if available)
+- newsletter/channel metadata (if available)
+
+---
+
+GROUP CACHE
+
+Maintain an efficient cache for:
+
+- group names
+- descriptions
+- invite links (where retrievable)
+- participant list
+- admin list
+- owner
+- settings
+- join approval state
+
+Refresh intelligently rather than requesting data unnecessarily.
+
+---
+
+CONTACT CACHE
+
+Maintain a contact cache for:
+
+- display names
+- push names
+- profile metadata available through the library
+
+Avoid repeated network requests.
+
+---
+
+PROFILE OPERATIONS
+
+Implement service foundations for supported profile operations, such as:
+
+- fetching profile picture
+- updating profile picture (where supported)
+- profile name updates (where supported)
+- profile information retrieval
+
+These services will be used by later prompts.
+
+---
+
+GROUP OPERATIONS
+
+Create reusable service methods for supported group operations:
+
+- create group
+- leave group
+- fetch metadata
+- update subject
+- update description
+- update group picture
+- invite handling
+- participant management
+- announcement mode
+- join approval
+- disappearing message settings (if supported)
+
+Do not create user commands yet—only the service layer.
+
+---
+
+MESSAGE SENDING ENGINE
+
+Create one unified sendMessage service.
+
+Support all message types exposed by the library, including where supported:
+
+- text
+- image
+- video
+- audio
+- voice note
+- sticker
+- GIF/video-as-GIF
+- document
+- contact
+- location
+- polls
+- mentions
+- quoted replies
+- buttons/interactive content supported by the library
+- captions
+- link previews
+- existing ("use as is") link preview metadata when already present
+- generated previews when supported by the library
+
+The rest of the project must never call the socket directly to send messages—everything goes through this engine.
+
+---
+
+MEDIA ENGINE
+
+Create a reusable media service.
+
+Responsibilities:
+
+- upload
+- download
+- temporary storage
+- cleanup
+- MIME detection
+- size validation
+- media type detection
+
+Design it for reuse by future commands such as profile picture updates and group status posting.
+
+---
+
+PERMISSION HELPERS
+
+Expose helper methods for:
+
+- isGroup
+- isPrivate
+- isAdmin
+- isSuperAdmin
+- isOwner
+- isBotAdmin
+- isSessionOwner
+- isSudo
+
+These are service methods only.
+
+---
+
+RUNTIME MONITOR
+
+Create a runtime monitor that tracks:
+
+- active sessions
+- uptime
+- reconnect count
+- memory usage
+- socket health
+- event throughput
+- message throughput
+- cache statistics
+
+This will later feed the Telegram and Web dashboards.
+
+---
+
+INTERNAL EVENTS
+
+Emit internal events for important actions, such as:
+
+- sessionConnected
+- sessionDisconnected
+- sessionReconnected
+- messageReceived
+- messageSent
+- groupUpdated
+- participantUpdated
+- profileUpdated
+- authUpdated
+- mediaUploaded
+- mediaDownloaded
+
+Future modules must subscribe to these events rather than modifying the WhatsApp core.
+
+---
+
+DOCUMENTATION
+
+Generate clear documentation describing:
+
+- how sessions are created
+- how sockets are managed
+- how authentication is stored
+- how messages are normalized
+- how services interact with the core
+- extension points for future prompts
+
+---
+
+DELIVERABLE
+
+Produce:
+
+1. Complete WhatsApp Engine.
+2. Socket Manager.
+3. Authentication Manager.
+4. Connection Lifecycle Manager.
+5. Message Normalizer.
+6. Unified Message Sending Engine.
+7. Media Engine.
+8. Group Service Layer.
+9. Contact Service Layer.
+10. Profile Service Layer.
+11. Runtime Monitor.
+12. Internal Event Integrations.
+13. Caching Strategy.
+14. Complete technical documentation.
+
+Do not implement commands, anti features, Telegram, the web panel, or AI in this prompt. Those will be implemented in later prompts using the reusable services created here.

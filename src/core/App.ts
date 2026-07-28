@@ -8,6 +8,7 @@
  *   Logger → Config → EventBus → Cache → DB
  *     → Permissions → Sessions → Middleware
  *     → Commands → Pipeline → Scheduler → Plugins
+ *     → GroupService → ContactService → ProfileService → RuntimeMonitor
  *     → WhatsAppClients
  */
 
@@ -30,6 +31,13 @@ import { container } from './Container';
 import { LoggingMiddleware } from '../middlewares/built-in/LoggingMiddleware';
 import { MaintenanceMiddleware } from '../middlewares/built-in/MaintenanceMiddleware';
 import { RateLimitMiddleware } from '../middlewares/built-in/RateLimitMiddleware';
+import { GroupService } from '../services/GroupService';
+import { ContactService } from '../services/ContactService';
+import { ProfileService } from '../services/ProfileService';
+import { RuntimeMonitor } from '../services/RuntimeMonitor';
+import { socketManager } from '../whatsapp/SocketManager';
+import { GroupCache } from '../whatsapp/GroupCache';
+import { ContactCache } from '../whatsapp/ContactCache';
 import type { DatabaseConfig } from '../types/Database';
 
 const log = logger.child('App');
@@ -37,6 +45,7 @@ const log = logger.child('App');
 export class App {
   private readonly clients = new Map<string, WhatsAppClient>();
   private isRunning = false;
+  private monitor?: RuntimeMonitor;
 
   /**
    * Initialize all subsystems and register them in the DI container.
@@ -128,6 +137,33 @@ export class App {
     const pluginManager = new PluginManager(eventBus, pluginContext);
     container.register('PluginManager', pluginManager);
 
+    // ── 13. WhatsApp Engine Services ───────────────────────────────────────
+    // Shared group + contact caches (per-client caches are created in WhatsAppClient,
+    // but a shared set is also registered for cross-session queries if needed).
+    const sharedGroupCache = new GroupCache();
+    const sharedContactCache = new ContactCache();
+
+    const groupService = new GroupService(socketManager, sharedGroupCache, eventBus);
+    const contactService = new ContactService(socketManager, sharedContactCache, eventBus);
+    const profileService = new ProfileService(socketManager, eventBus);
+
+    container.register('GroupService', groupService);
+    container.register('ContactService', contactService);
+    container.register('ProfileService', profileService);
+
+    // ── 14. Runtime Monitor ────────────────────────────────────────────────
+    const snapshotIntervalMs = config.get<number>('monitor.snapshotIntervalMs') ?? 60_000;
+    this.monitor = new RuntimeMonitor(
+      socketManager,
+      sessionManager,
+      cacheManager,
+      eventBus,
+      snapshotIntervalMs
+    );
+    this.monitor.start();
+    container.register('RuntimeMonitor', this.monitor);
+
+    this.isRunning = true;
     log.success('All subsystems initialized');
   }
 
@@ -178,10 +214,16 @@ export class App {
     if (!this.isRunning) return;
     log.info('Shutting down PAPPYBOT V2...');
 
+    // Stop runtime monitor
+    this.monitor?.stop();
+
     // Stop all WhatsApp sessions
     for (const [id] of this.clients) {
       await this.stopSession(id);
     }
+
+    // Clear all sockets
+    socketManager.clear();
 
     // Shutdown scheduler
     const scheduler = container.tryResolve<SchedulerService>('SchedulerService');
