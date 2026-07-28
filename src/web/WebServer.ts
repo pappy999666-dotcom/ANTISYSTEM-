@@ -64,6 +64,7 @@ export class WebServer {
 
   private configureExpress(app: express.Application): void {
     // Security
+    app.set('trust proxy', 1); // trust nginx reverse proxy
     app.use(helmet({
       contentSecurityPolicy: false, // allow inline scripts in dev
       crossOriginEmbedderPolicy: false,

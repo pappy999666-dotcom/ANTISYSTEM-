@@ -550,6 +550,11 @@ export class WhatsAppClient {
 
     // ── QR code ──────────────────────────────────────────────────────────
     if (qr) {
+      // Suppress QR for code-method sessions (sess_ prefix = phone-based pairing)
+      if (this.sessionId.startsWith('sess_')) {
+        log.debug('QR suppressed for code-method session', { sessionId: this.sessionId });
+        return;
+      }
       this.sessionManager.updateState(this.sessionId, { status: 'qr_pending' });
       await this.bus.emit('session:qr', { sessionId: this.sessionId, qr });
 
@@ -558,7 +563,7 @@ export class WhatsAppClient {
         const qrTerminal = require('qrcode-terminal') as { generate: (s: string, o: object) => void };
         qrTerminal.generate(qr, { small: true });
       } catch {
-        // qrcode-terminal unavailable — QR is still emitted on the bus
+        // qrcode-terminal unavailable
       }
 
       log.info('QR code generated — scan with WhatsApp', { sessionId: this.sessionId });

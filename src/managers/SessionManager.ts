@@ -99,7 +99,11 @@ export class SessionManager {
    * Update a session's runtime state.
    */
   updateState(id: string, patch: Partial<SessionState>): void {
-    const session = this.require(id);
+    const session = this.sessions.get(id);
+    if (!session) {
+      log.debug('updateState called on unknown session (ignored)', { id });
+      return;
+    }
     Object.assign(session.state, patch);
     this.bus.emit('session:state_changed', { sessionId: id, state: session.state });
     log.debug('Session state updated', { id, status: session.state.status });
@@ -109,9 +113,9 @@ export class SessionManager {
    * Update a session's configuration. Changes take effect immediately.
    */
   updateConfig(id: string, patch: Partial<SessionConfig>): void {
-    const session = this.require(id);
+    const session = this.sessions.get(id);
+    if (!session) return;
     Object.assign(session.config, patch);
-    // Invalidate session cache
     this.cache.clearPrefix(session.cacheNamespace);
     log.debug('Session config updated', { id });
   }
@@ -132,13 +136,15 @@ export class SessionManager {
    * Increment reconnect attempts and return the new count.
    */
   incrementReconnectAttempts(id: string): number {
-    const session = this.require(id);
+    const session = this.sessions.get(id);
+    if (!session) return 0;
     session.state.reconnectAttempts++;
     return session.state.reconnectAttempts;
   }
 
   resetReconnectAttempts(id: string): void {
-    const session = this.require(id);
+    const session = this.sessions.get(id);
+    if (!session) return;
     session.state.reconnectAttempts = 0;
   }
 

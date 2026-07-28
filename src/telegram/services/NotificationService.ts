@@ -70,16 +70,16 @@ export class NotificationService {
         `❌ <b>Session Error</b>\nSession: <code>${p['sessionId']}</code>\n${String((p['error'] as Error)?.message ?? p['error'])}`);
     });
 
-    on('session:pairing_code', async (p) => {
-      await this.notifyAll(
-        `🔢 <b>Pairing Code</b>\nSession: <code>${p['sessionId']}</code>\n\n<code>${p['code']}</code>\n\n<i>Enter in WhatsApp → Linked Devices → Link with phone number</i>`);
+    on('session:pairing_code', async (_p) => {
+      // Code is already sent directly in handlePairPhoneText — no duplicate needed
     });
 
     on('session:qr', async (p) => {
-      const qrString = p['qr'] as string;
       const sessionId = p['sessionId'] as string;
+      // Suppress QR for code-method sessions (sess_ prefix = phone-based pairing)
+      if (sessionId.startsWith('sess_')) return;
+      const qrString = p['qr'] as string;
       try {
-        // Generate QR as PNG buffer and send as photo
         const buffer = await QRCode.toBuffer(qrString, { type: 'png', width: 400, margin: 2 });
         const caption = `📷 <b>QR Code Ready</b>\nSession: <code>${sessionId}</code>\n\n<i>Open WhatsApp → Linked Devices → Link a Device → Scan QR</i>`;
         await this.bot.api.sendPhoto(
@@ -88,9 +88,7 @@ export class NotificationService {
           { caption, parse_mode: 'HTML' }
         );
       } catch (err) {
-        log.warn('Failed to send QR image, falling back to text', { error: String(err) });
-        await this.sendTo(OWNER_TG_ID,
-          `📷 <b>QR Code Ready</b>\nSession: <code>${sessionId}</code>\n\n<i>Scan with WhatsApp → Linked Devices → Scan QR code</i>`);
+        log.warn('Failed to send QR image', { error: String(err) });
       }
     });
 

@@ -267,7 +267,6 @@ export async function handlePairPhoneText(
       method: 'code',
       phoneNumber: phone,
       label: phone,
-      customCode: 'PAPPYBOT', // exactly 8 chars
     });
 
     if (result.pairingCode) {
