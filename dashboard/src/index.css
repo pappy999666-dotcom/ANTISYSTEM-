@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+:root {
+  --cyan: #00f5ff;
+  --blue: #0066ff;
+  --purple: #7c00ff;
+  --red: #ff0040;
+  --orange: #ff6600;
+  --dim: #1a2a3a;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #050505;
+  color: #e0f0ff;
+}
+
+body {
+  font-family: 'Share Tech Mono', monospace;
+  -webkit-font-smoothing: antialiased;
+  cursor: crosshair;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: #0a0a0f; }
+::-webkit-scrollbar-thumb { background: var(--cyan); opacity: 0.3; }
+
+/* Glow utilities */
+.glow-cyan { text-shadow: 0 0 8px var(--cyan), 0 0 20px var(--cyan); }
+.glow-blue { text-shadow: 0 0 8px var(--blue), 0 0 20px var(--blue); }
+.glow-red { text-shadow: 0 0 8px var(--red), 0 0 20px var(--red); }
+.glow-orange { text-shadow: 0 0 8px var(--orange), 0 0 20px var(--orange); }
+
+.border-glow-cyan { box-shadow: 0 0 8px var(--cyan), inset 0 0 8px rgba(0,245,255,0.05); }
+.border-glow-blue { box-shadow: 0 0 8px var(--blue), inset 0 0 8px rgba(0,102,255,0.05); }
+.border-glow-red { box-shadow: 0 0 12px var(--red), inset 0 0 8px rgba(255,0,64,0.05); }
+
+/* HUD panel */
+.hud-panel {
+  background: rgba(5,5,5,0.85);
+  border: 1px solid rgba(0,245,255,0.15);
+  backdrop-filter: blur(4px);
+  position: relative;
+}
+
+.hud-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.4;
+}
+
+.hud-corner::before,
+.hud-corner::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--cyan);
+  border-style: solid;
+  opacity: 0.6;
+}
+
+.hud-corner::before { top: 0; left: 0; border-width: 1px 0 0 1px; }
+.hud-corner::after { top: 0; right: 0; border-width: 1px 1px 0 0; }
+
+/* Scan line overlay */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Neon progress bar */
+.neon-bar {
+  height: 3px;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  box-shadow: 0 0 6px var(--cyan);
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Terminal cursor blink */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink { animation: blink 1s step-end infinite; }
+
+/* Breathing animation */
+@keyframes breathe {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+.breathe { animation: breathe 3s ease-in-out infinite; }
+
+/* Detection alert flash */
+@keyframes alertFlash {
+  0% { background: rgba(255,0,64,0.3); }
+  100% { background: transparent; }
+}
+.alert-flash { animation: alertFlash 0.4s ease-out; }
+
+/* Node pulse states */
+@keyframes nodePulseBlue {
+  0%, 100% { box-shadow: 0 0 6px var(--blue), 0 0 12px var(--blue); }
+  50% { box-shadow: 0 0 12px var(--cyan), 0 0 24px var(--cyan); }
+}
+@keyframes nodePulseRed {
+  0%, 100% { box-shadow: 0 0 6px var(--red), 0 0 12px var(--red); }
+  50% { box-shadow: 0 0 16px var(--red), 0 0 32px var(--red); }
+}
+@keyframes nodePulseOrange {
+  0%, 100% { box-shadow: 0 0 6px var(--orange), 0 0 12px var(--orange); }
+  50% { box-shadow: 0 0 12px var(--orange), 0 0 24px var(--orange); }
+}
+.node-enabled { animation: nodePulseBlue 2s ease-in-out infinite; }
+.node-blocking { animation: nodePulseRed 0.8s ease-in-out infinite; }
+.node-detecting { animation: nodePulseOrange 1s ease-in-out infinite; }
