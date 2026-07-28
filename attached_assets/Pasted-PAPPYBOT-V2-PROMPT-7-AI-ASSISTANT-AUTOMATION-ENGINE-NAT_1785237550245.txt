@@ -1,0 +1,493 @@
+PAPPYBOT V2 — PROMPT 7: AI ASSISTANT, AUTOMATION ENGINE & NATURAL LANGUAGE CONTROL
+
+Continue from the latest production state stored in the connected GitHub repository.
+
+Before writing any code:
+
+- Pull the latest changes from GitHub.
+- Continue from the existing codebase.
+- Do not recreate modules already implemented.
+- Reuse all existing services (WhatsApp Engine, Telegram Panel, Web Dashboard, Group Engine, Scheduler, Response Engine, Configuration Manager, etc.).
+- When this prompt is complete, commit with a descriptive message and push to the same GitHub repository.
+
+This prompt is ONLY for the AI Assistant and Automation Engine.
+
+Do NOT rewrite the WhatsApp Engine, Anti System, Telegram Panel, Web Dashboard, or Group Management.
+
+---
+
+OBJECTIVE
+
+Build an intelligent AI Assistant that becomes the personal administrator for each WhatsApp session.
+
+The AI should understand natural language, translate requests into bot actions, schedule tasks, answer questions about the user's own bot configuration, and automate repetitive work.
+
+The AI must always respect the existing permission system.
+
+---
+
+DESIGN PRINCIPLES
+
+The AI is an assistant, not a replacement for the command system.
+
+Every AI action must internally execute existing services and commands rather than duplicating business logic.
+
+The AI should:
+
+Understand
+
+↓
+
+Plan
+
+↓
+
+Validate Permissions
+
+↓
+
+Generate Execution Plan
+
+↓
+
+Execute Existing Services
+
+↓
+
+Report Result
+
+---
+
+AI PROVIDER ENGINE
+
+Create an abstraction layer supporting multiple AI providers.
+
+Each session owner should be able to configure their preferred provider.
+
+Examples include:
+
+OpenAI
+
+Groq
+
+Google Gemini
+
+Anthropic Claude
+
+OpenRouter
+
+Future providers
+
+Each provider should implement the same interface.
+
+---
+
+SESSION AI SETTINGS
+
+Every WhatsApp session has independent AI settings.
+
+Store:
+
+Provider
+
+API Key
+
+Model
+
+Temperature
+
+Maximum Tokens
+
+Memory Enabled
+
+Automation Enabled
+
+Response Style
+
+Language
+
+Prefix
+
+No session may access another session's AI configuration.
+
+---
+
+AI COMMANDS
+
+Implement:
+
+.ai on
+
+.ai off
+
+.setaiprefix
+
+.setaiprovider
+
+.setaimodel
+
+.setaitoken
+
+.aiinfo
+
+.aimemory on
+
+.aimemory off
+
+.aiclear
+
+Commands should only manage AI configuration.
+
+---
+
+ACTIVATION
+
+The AI responds only when:
+
+The sender is the Session Owner or SUDO.
+
+AND
+
+AI is enabled.
+
+AND
+
+The configured AI prefix is used.
+
+Example:
+
+pappy mute the group tomorrow at 2 PM
+
+pappy send this message next Friday
+
+pappy open the group in one hour
+
+pappy warn @user
+
+pappy create a poll
+
+The AI should never execute commands for ordinary users.
+
+---
+
+NATURAL LANGUAGE ENGINE
+
+The AI should interpret natural language requests and convert them into structured actions.
+
+Examples:
+
+"Close the group at 10 PM."
+
+"Open the group tomorrow morning."
+
+"Send this image every Friday."
+
+"Kick anyone who joins twice."
+
+"Enable AntiLink."
+
+"Disable Welcome."
+
+"Show runtime statistics."
+
+Do not hardcode phrases.
+
+Use intent detection and planning.
+
+---
+
+TASK PLANNER
+
+Create a planning engine.
+
+Responsibilities:
+
+Intent Detection
+
+Entity Extraction
+
+Time Parsing
+
+Permission Validation
+
+Dependency Resolution
+
+Execution Planning
+
+Confirmation (when required)
+
+Execution
+
+Reporting
+
+---
+
+AUTOMATION ENGINE
+
+Support recurring and scheduled automations.
+
+Examples:
+
+Daily messages
+
+Weekly reminders
+
+Monthly announcements
+
+Timed group opening
+
+Timed group closing
+
+Automatic broadcasts
+
+Future workflow automation
+
+Reuse the Scheduler from previous prompts.
+
+---
+
+MEMORY ENGINE
+
+Create a per-session AI memory.
+
+Store:
+
+Conversation summaries
+
+Preferences
+
+Frequently used commands
+
+Recent automations
+
+Context
+
+Memory must remain isolated per session.
+
+Support:
+
+Clear Memory
+
+Export Memory
+
+Disable Memory
+
+---
+
+SAFETY
+
+Before executing destructive actions:
+
+Kick
+
+Demote
+
+Delete Session
+
+Leave Group
+
+Reset Settings
+
+Require confirmation when appropriate.
+
+---
+
+COMMAND EXECUTION
+
+The AI must execute existing services.
+
+Examples:
+
+If AI decides to enable AntiLink:
+
+Call Anti Engine
+
+NOT
+
+Reimplement AntiLink.
+
+This applies to every feature.
+
+---
+
+SCHEDULED EXECUTION
+
+Support scheduling through natural language.
+
+Examples:
+
+"Tomorrow at 8 PM."
+
+"Every Monday."
+
+"In 2 hours."
+
+"Every first day of the month."
+
+Use the Scheduler.
+
+Persist tasks across restarts.
+
+---
+
+MEDIA UNDERSTANDING
+
+Support AI handling of:
+
+Quoted messages
+
+Images
+
+Videos
+
+Audio
+
+Voice Notes
+
+Documents
+
+Captions
+
+When the provider supports multimodal input.
+
+Gracefully fall back for providers that do not.
+
+---
+
+AI RESPONSE ENGINE
+
+Support configurable response styles.
+
+Examples:
+
+Professional
+
+Friendly
+
+Short
+
+Detailed
+
+Minimal
+
+Each session owner chooses the preferred style.
+
+---
+
+CONTEXT
+
+Allow the AI to access only:
+
+Current Session
+
+Current Group
+
+Current Configuration
+
+Current User Permissions
+
+Never expose data belonging to another user or session.
+
+---
+
+LOGGING
+
+Log:
+
+Prompt
+
+Provider
+
+Execution Plan
+
+Result
+
+Execution Time
+
+Errors
+
+Token Usage (where available)
+
+Do not log API keys or sensitive credentials.
+
+---
+
+AI DASHBOARD
+
+Expose AI status to both Telegram and Web dashboards.
+
+Display:
+
+Provider
+
+Model
+
+Memory Status
+
+Automation Status
+
+Active Tasks
+
+Queued Tasks
+
+Recent Actions
+
+---
+
+EXTENSIBILITY
+
+Design the AI Engine so new providers and tools can be added without changing the core architecture.
+
+---
+
+DOCUMENTATION
+
+Generate documentation explaining:
+
+Provider Interface
+
+Memory System
+
+Automation Engine
+
+Planning Engine
+
+Natural Language Flow
+
+Permission Model
+
+Scheduler Integration
+
+Extension Points
+
+---
+
+DELIVERABLE
+
+Implement:
+
+- AI Provider Engine
+- Multi-Provider Support
+- AI Configuration Commands
+- AI Activation System
+- Natural Language Interpreter
+- Planning Engine
+- Automation Engine
+- Scheduler Integration
+- Per-Session Memory
+- Task Execution Engine
+- AI Dashboard Integration
+- Logging
+- Documentation
+
+When complete:
+
+1. Pull/rebase if necessary.
+2. Resolve conflicts safely.
+3. Run project validation.
+4. Fix any issues introduced by this prompt.
+5. Commit with the message:
+
+feat: implement AI assistant and automation engine
+
+6. Push all completed work to the connected GitHub repository so the next development prompt can continue from the latest production state.
