@@ -41,6 +41,7 @@ import { ContactCache } from '../whatsapp/ContactCache';
 import { AntiEngine } from '../anti/core/AntiEngine';
 import { AntiMiddleware } from '../anti/core/AntiMiddleware';
 import { GroupManagementPlugin } from '../group/plugin/GroupManagementPlugin';
+import { TelegramBot } from '../telegram/TelegramBot';
 import type { DatabaseConfig } from '../types/Database';
 
 const log = logger.child('App');
@@ -49,6 +50,7 @@ export class App {
   private readonly clients = new Map<string, WhatsAppClient>();
   private isRunning = false;
   private monitor?: RuntimeMonitor;
+  private telegramBot?: TelegramBot;
 
   /**
    * Initialize all subsystems and register them in the DI container.
@@ -183,6 +185,25 @@ export class App {
     await pluginManager.load(groupPlugin);
     log.info('Group Management plugin loaded');
 
+    // ── 17. Telegram Control Panel ────────────────────────────────────────
+    const telegramToken = config.get<string>('telegram.botToken') ?? process.env['TELEGRAM_BOT_TOKEN'];
+    if (telegramToken) {
+      this.telegramBot = new TelegramBot(
+        telegramToken,
+        this,
+        sessionManager,
+        this.monitor,
+        eventBus,
+        sharedGroupCache,
+        socketManager
+      );
+      await this.telegramBot.start();
+      container.register('TelegramBot', this.telegramBot);
+      log.info('Telegram Control Panel started');
+    } else {
+      log.warn('TELEGRAM_BOT_TOKEN not set — Telegram panel disabled');
+    }
+
     this.isRunning = true;
     log.success('All subsystems initialized');
   }
@@ -233,6 +254,9 @@ export class App {
   async shutdown(): Promise<void> {
     if (!this.isRunning) return;
     log.info('Shutting down PAPPYBOT V2...');
+
+    // Stop Telegram bot
+    await this.telegramBot?.stop();
 
     // Stop runtime monitor
     this.monitor?.stop();

@@ -49,6 +49,20 @@ export interface NormalizedMessage {
   text?: string;
   /** Quoted/replied-to message if present */
   quoted?: MessageQuoted;
+  /**
+   * Extended quoted message with media — populated by MessageNormalizer
+   * when the quoted message contains downloadable media.
+   */
+  quotedMessage?: {
+    sender?: { jid: string };
+    type?: MessageType;
+    mediaBuffer?: Buffer;
+    mimeType?: string;
+    fileName?: string;
+    [key: string]: unknown;
+  };
+  /** Downloaded media buffer for the current message (if applicable) */
+  mediaBuffer?: Buffer;
   /** Mentioned JIDs in the message */
   mentions: string[];
   /** Unix timestamp */

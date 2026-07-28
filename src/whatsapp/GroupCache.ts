@@ -76,6 +76,11 @@ export class GroupCache {
     return result;
   }
 
+  /** Alias for getAllGroups() */
+  getAll(): GroupMetadata[] {
+    return this.getAllGroups();
+  }
+
   // ── Write ───────────────────────────────────────────────────────────────
 
   /** Store or replace a group metadata entry. */

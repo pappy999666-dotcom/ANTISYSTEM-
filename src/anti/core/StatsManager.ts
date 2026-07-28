@@ -18,7 +18,12 @@ export class StatsManager {
     const k = this.key(sessionId, groupJid);
     let s = this.stats.get(k);
     if (!s) {
-      s = { sessionId, groupJid, detections: {}, actions: {}, permits: 0, warns: 0, kicks: 0, bans: 0, lastReset: Date.now() };
+      s = {
+        sessionId, groupJid,
+        detections: {} as Record<string, number>,
+        actions: {} as Record<ActionType, number>,
+        permits: 0, warns: 0, kicks: 0, bans: 0, lastReset: Date.now(),
+      };
       this.stats.set(k, s);
     }
     return s;
@@ -47,8 +52,8 @@ export class StatsManager {
 
   reset(sessionId: string, groupJid: string): void {
     const s = this.get(sessionId, groupJid);
-    s.detections = {};
-    s.actions = {};
+    s.detections = {} as Record<string, number>;
+    s.actions = {} as Record<ActionType, number>;
     s.permits = 0;
     s.warns = 0;
     s.kicks = 0;
