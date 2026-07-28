@@ -78,6 +78,13 @@ export interface PappybotEvents {
   'group:participant_promoted': { sessionId: string; groupJid: string; jid: string };
   'group:participant_demoted': { sessionId: string; groupJid: string; jid: string };
   'group:join_approval': { sessionId: string; groupJid: string; participantJids: string[]; action: string };
+  'group:created': { sessionId: string; groupJid: string; subject: string };
+  'group:picture_changed': { sessionId: string; groupJid: string };
+  'group:subject_changed': { sessionId: string; groupJid: string; subject: string };
+  'group:description_changed': { sessionId: string; groupJid: string };
+  'group:welcome_sent': { sessionId: string; groupJid: string; jid: string };
+  'group:goodbye_sent': { sessionId: string; groupJid: string; jid: string };
+  'group:admin_protection_triggered': { sessionId: string; groupJid: string; jid: string; type: 'demote' | 'promote'; mode: string };
 
   // ── Contacts ──────────────────────────────────────────────────────
   'contact:upserted': { sessionId: string; jid: string };

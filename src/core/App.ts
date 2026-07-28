@@ -40,6 +40,7 @@ import { GroupCache } from '../whatsapp/GroupCache';
 import { ContactCache } from '../whatsapp/ContactCache';
 import { AntiEngine } from '../anti/core/AntiEngine';
 import { AntiMiddleware } from '../anti/core/AntiMiddleware';
+import { GroupManagementPlugin } from '../group/plugin/GroupManagementPlugin';
 import type { DatabaseConfig } from '../types/Database';
 
 const log = logger.child('App');
@@ -176,6 +177,11 @@ export class App {
     container.register('AntiEngine', antiEngine);
     middlewareEngine.use(new AntiMiddleware(antiEngine));
     log.info('Anti Engine initialized');
+
+    // ── 16. Group Management Plugin ────────────────────────────────────────
+    const groupPlugin = new GroupManagementPlugin();
+    await pluginManager.load(groupPlugin);
+    log.info('Group Management plugin loaded');
 
     this.isRunning = true;
     log.success('All subsystems initialized');
