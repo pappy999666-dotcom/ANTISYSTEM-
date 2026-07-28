@@ -8,6 +8,7 @@
 
 import http from 'http';
 import path from 'path';
+import fs from 'fs';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -23,6 +24,7 @@ import { createRuntimeRouter } from './api/runtime';
 import { createIntroRouter } from './api/intro';
 import { createUploadRouter, createReportRouter } from './api/upload';
 import { createBridgeRouter } from './api/bridge';
+import { createBackupRouter } from './api/backup';
 import type { App } from '../core/App';
 import type { SessionManager } from '../managers/SessionManager';
 import type { RuntimeMonitor } from '../services/RuntimeMonitor';
@@ -87,23 +89,34 @@ export class WebServer {
     app.use('/api/upload', createUploadRouter(this.reportService, this.wsServer));
     app.use('/api/report', createReportRouter(this.reportService, this.wsServer));
     app.use('/api/bridge', createBridgeRouter(this.socketManager, this.commandEngine, this.sessionManager));
+    app.use('/api/backup', createBackupRouter());
 
     // Health check
-    app.get('/health', (_req, res) => res.json({ ok: true, uptime: process.uptime() }));
+    app.get('/health', (_req, res) => {
+      const snap = this.monitor.snapshot();
+      const connectedSessions = snap.sessions.filter(s => s.status === 'connected').length;
+      const memMB = (snap.memory.rss / 1024 / 1024).toFixed(1);
+      res.json({
+        ok: true,
+        uptime: process.uptime(),
+        version: process.env['npm_package_version'] ?? '2.0.0',
+        sessions: { total: snap.sessions.length, connected: connectedSessions },
+        memory: { rss: `${memMB} MB`, heapUsed: `${(snap.memory.heapUsed / 1024 / 1024).toFixed(1)} MB` },
+        throughput: snap.throughput,
+        activeSockets: snap.activeSockets,
+        capturedAt: snap.capturedAt,
+      });
+    });
 
     // Serve compiled frontend (production)
-    try {
-      const fs = require('fs') as typeof import('fs');
-      if (fs.existsSync(WEB_DIST)) {
-        app.use(express.static(WEB_DIST));
-        // SPA fallback — serve index.html for all non-API routes
-        app.get('*', (req, res) => {
-          if (!req.path.startsWith('/api') && !req.path.startsWith('/ws')) {
-            res.sendFile(path.join(WEB_DIST, 'index.html'));
-          }
-        });
-      }
-    } catch { /* dist not built yet */ }
+    if (fs.existsSync(WEB_DIST)) {
+      app.use(express.static(WEB_DIST));
+      app.get('*', (req, res) => {
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/ws')) {
+          res.sendFile(path.join(WEB_DIST, 'index.html'));
+        }
+      });
+    }
 
     // Global error handler
     app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

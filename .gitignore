@@ -35,3 +35,7 @@ Thumbs.db
 
 # Test coverage
 coverage/
+dist-test/
+
+# Backups
+storage/backups/

@@ -237,27 +237,13 @@ export class RuntimeMonitor {
   }
 
   private attachListeners(): void {
-    const onMessageReceived = (): void => { this.counters.messagesReceived++; };
-    const onMessageSent = (): void => { this.counters.messagesSent++; };
-    const onCommandExecuted = (): void => { this.counters.commandsExecuted++; };
-    const onCommandError = (): void => { this.counters.commandErrors++; };
-
-    this.bus.on('message:received', onMessageReceived);
-    this.bus.on('message:sent', onMessageSent);
-    this.bus.on('command:executed', onCommandExecuted);
-    this.bus.on('command:error', onCommandError);
-
-    // Register unsubscribers — EventBus.off() if available, else no-op
-    const bus = this.bus as { off?: (event: string, fn: unknown) => void };
-    if (bus.off) {
-      this.unsubscribers.push(
-        () => bus.off!('message:received', onMessageReceived),
-        () => bus.off!('message:sent', onMessageSent),
-        () => bus.off!('command:executed', onCommandExecuted),
-        () => bus.off!('command:error', onCommandError),
-      );
-    }
-
+    const ids = [
+      this.bus.on('message:received', () => { this.counters.messagesReceived++; }),
+      this.bus.on('message:sent', () => { this.counters.messagesSent++; }),
+      this.bus.on('command:executed', () => { this.counters.commandsExecuted++; }),
+      this.bus.on('command:error', () => { this.counters.commandErrors++; }),
+    ];
+    this.unsubscribers.push(...ids.map(id => () => this.bus.off(id)));
     log.debug('Runtime monitor listeners attached');
   }
 }

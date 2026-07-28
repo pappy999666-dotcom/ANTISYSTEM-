@@ -14,6 +14,8 @@
  */
 
 import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
 import { App } from './App';
 import { logger } from '../logger/Logger';
 
@@ -21,6 +23,11 @@ const log = logger.child('Bootstrap');
 
 async function main(): Promise<void> {
   log.info('Starting PAPPYBOT V2...');
+
+  // Ensure required storage directories exist
+  for (const dir of ['storage/sessions', 'storage/media', 'logs']) {
+    fs.mkdirSync(path.resolve(dir), { recursive: true });
+  }
 
   const app = new App();
   await app.initialize();

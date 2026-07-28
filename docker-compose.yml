@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  pappybot:
+    build:
+      context: .
+      target: production
+    image: pappybot-v2:latest
+    container_name: pappybot
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - pappy_storage:/app/storage
+      - pappy_logs:/app/logs
+      - pappy_config:/app/config
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - pappy_net
+
+  db:
+    image: postgres:16-alpine
+    container_name: pappybot_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_PG_DATABASE:-pappybot}
+      POSTGRES_USER: ${DB_PG_USER:-pappy}
+      POSTGRES_PASSWORD: ${DB_PG_PASSWORD:-changeme}
+    volumes:
+      - pappy_pgdata:/var/lib/postgresql/data
+    networks:
+      - pappy_net
+    profiles:
+      - postgres
+
+volumes:
+  pappy_storage:
+  pappy_logs:
+  pappy_config:
+  pappy_pgdata:
+
+networks:
+  pappy_net:
+    driver: bridge

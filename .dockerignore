@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-test
+coverage
+storage
+logs
+.env
+*.log
+.git
+tests
+dashboard
+web
+attached_assets
+docs
+*.md
+tsconfig.test.json
+jest.config.ts
