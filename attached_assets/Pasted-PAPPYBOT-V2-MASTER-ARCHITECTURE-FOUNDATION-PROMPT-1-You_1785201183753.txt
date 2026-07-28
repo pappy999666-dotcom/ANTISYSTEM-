@@ -1,0 +1,632 @@
+PAPPYBOT V2 — MASTER ARCHITECTURE & FOUNDATION (PROMPT 1)
+
+You are a senior software engineer and system architect. Your task is to build the foundation of PAPPYBOT V2, a production-grade WhatsApp automation platform. This prompt is only for the project foundation. Do not implement user commands yet unless they are required for the architecture itself.
+
+Primary Goal
+
+Build a lightweight, modular, high-performance, event-driven WhatsApp platform that will later power:
+
+- Advanced anti-abuse system
+- Group management
+- Telegram control panel
+- Web dashboard
+- AI assistant
+- Intro card system
+- Scheduler
+- Automation engine
+
+This project must be designed to support thousands of groups and many independent WhatsApp sessions without conflicts.
+
+---
+
+REQUIRED WHATSAPP LIBRARY
+
+The WhatsApp library for this project is @crysnovax/baileys.
+
+Requirements:
+
+- Read the library documentation and source before implementing features.
+- Never invent unsupported APIs.
+- Never fake features.
+- If a requested feature is not supported by the library or protocol, clearly document the limitation instead of fabricating behavior.
+- Use only supported APIs and message structures.
+
+Do not replace the library with any other Baileys fork.
+
+---
+
+PROJECT GOALS
+
+The bot must be:
+
+- extremely lightweight
+- memory efficient
+- modular
+- event driven
+- scalable
+- restart safe
+- production ready
+- horizontally scalable
+- easy to extend
+- able to run continuously for long periods
+
+Every module must be isolated so future updates do not break unrelated features.
+
+---
+
+PROGRAMMING STYLE
+
+Follow clean architecture.
+
+Never place all logic inside command files.
+
+Instead divide the project into layers.
+
+Example:
+
+Core
+
+↓
+
+Services
+
+↓
+
+Managers
+
+↓
+
+Engines
+
+↓
+
+Events
+
+↓
+
+Commands
+
+↓
+
+UI
+
+Business logic must never live inside command handlers.
+
+Commands should only:
+
+- validate input
+- call services
+- return responses
+
+---
+
+FOLDER STRUCTURE
+
+Design a professional folder structure similar to enterprise software.
+
+Include dedicated folders for:
+
+Core
+
+Config
+
+Events
+
+Listeners
+
+Managers
+
+Services
+
+Engines
+
+Middlewares
+
+Commands
+
+Telegram
+
+WhatsApp
+
+Web
+
+Database
+
+Models
+
+Repositories
+
+Cache
+
+Queues
+
+Schedulers
+
+Utilities
+
+Helpers
+
+Types
+
+Constants
+
+Assets
+
+Templates
+
+Locales
+
+Logs
+
+Storage
+
+Media
+
+Sessions
+
+Plugins
+
+Tests
+
+The project must be easy to navigate.
+
+---
+
+CONFIGURATION SYSTEM
+
+Build a centralized configuration system.
+
+Support:
+
+environment variables
+
+JSON
+
+future database overrides
+
+Configuration must be reloadable without restarting the application whenever possible.
+
+---
+
+LOGGER
+
+Create a professional logging system.
+
+Support:
+
+INFO
+
+SUCCESS
+
+WARNING
+
+ERROR
+
+DEBUG
+
+TRACE
+
+Performance logs
+
+Every module should use the same logger.
+
+---
+
+DATABASE LAYER
+
+Design the project so it can easily support:
+
+SQLite
+
+MongoDB
+
+PostgreSQL
+
+without rewriting business logic.
+
+Use repositories between business logic and storage.
+
+---
+
+CACHE
+
+Create a centralized cache manager.
+
+Must support:
+
+memory cache
+
+future Redis support
+
+TTL
+
+automatic cleanup
+
+---
+
+SESSION MANAGER
+
+Build a dedicated session manager.
+
+Each WhatsApp account is treated as its own isolated workspace.
+
+Every session must have:
+
+unique ID
+
+owner
+
+configuration
+
+permissions
+
+database namespace
+
+cache namespace
+
+runtime state
+
+scheduler
+
+No session may interfere with another.
+
+---
+
+EVENT BUS
+
+Create an internal event bus.
+
+Every major action should emit events.
+
+Examples:
+
+session created
+
+session connected
+
+session disconnected
+
+group updated
+
+message received
+
+message deleted
+
+command executed
+
+task scheduled
+
+configuration changed
+
+This prevents modules from depending directly on one another.
+
+---
+
+LISTENER SYSTEM
+
+Create a listener manager.
+
+Listeners must register automatically.
+
+Support:
+
+loading
+
+unloading
+
+hot reload
+
+error isolation
+
+priority
+
+No duplicate listeners.
+
+No listener leaks.
+
+---
+
+MIDDLEWARE SYSTEM
+
+Implement reusable middleware.
+
+Future modules should be able to attach middleware without modifying the core.
+
+Examples:
+
+permission checks
+
+cooldowns
+
+validation
+
+logging
+
+analytics
+
+rate limiting
+
+maintenance mode
+
+---
+
+PERMISSION SYSTEM
+
+Create a flexible RBAC system.
+
+Roles:
+
+GLOBAL_OWNER
+
+SESSION_OWNER
+
+SUDO
+
+ADMIN
+
+USER
+
+Permissions must inherit correctly.
+
+Future custom roles should be supported.
+
+---
+
+COMMAND ENGINE
+
+Do not implement commands yet.
+
+Instead create the engine.
+
+Features:
+
+command registry
+
+aliases
+
+permissions
+
+cooldowns
+
+argument parser
+
+quoted message support
+
+reply support
+
+error handling
+
+help metadata
+
+category metadata
+
+autocomplete-ready architecture
+
+Future plugins should be able to register commands dynamically.
+
+---
+
+PLUGIN SYSTEM
+
+Design the project so new modules can be added without changing the core.
+
+Plugins should register:
+
+commands
+
+listeners
+
+middlewares
+
+events
+
+services
+
+cleanly.
+
+---
+
+TASK SCHEDULER
+
+Create a scheduler service.
+
+Future modules will use it for:
+
+timed messages
+
+automation
+
+AI tasks
+
+maintenance
+
+cleanup
+
+recurring jobs
+
+Jobs must survive restarts if persistent storage is available.
+
+---
+
+MESSAGE PIPELINE
+
+Design a centralized incoming message pipeline.
+
+Every incoming WhatsApp message should flow through:
+
+Message Receive
+
+↓
+
+Normalize
+
+↓
+
+Validation
+
+↓
+
+Middleware
+
+↓
+
+Permission Check
+
+↓
+
+Event Emit
+
+↓
+
+Command Detection
+
+↓
+
+Service Execution
+
+↓
+
+Response Builder
+
+↓
+
+Send Message
+
+Future anti systems will plug into this pipeline.
+
+---
+
+RESPONSE ENGINE
+
+Create one response builder.
+
+Support:
+
+text
+
+image
+
+video
+
+audio
+
+voice note
+
+documents
+
+stickers
+
+buttons
+
+interactive messages
+
+link previews (when supported)
+
+quoted replies
+
+mentions
+
+future message types
+
+Every future feature must use this single response engine.
+
+---
+
+ERROR HANDLING
+
+Never allow one module to crash another.
+
+Every service should catch and report its own errors.
+
+Unexpected exceptions must be logged with useful debugging information.
+
+---
+
+PERFORMANCE
+
+Optimize for:
+
+low RAM usage
+
+low CPU usage
+
+minimal object allocations
+
+listener reuse
+
+connection reuse
+
+lazy loading
+
+Avoid polling whenever event-driven alternatives exist.
+
+---
+
+SECURITY
+
+Validate every external input.
+
+Never trust user data.
+
+Prevent command injection.
+
+Prevent path traversal.
+
+Sanitize filenames.
+
+Protect secrets.
+
+Never log sensitive credentials.
+
+---
+
+CODE QUALITY
+
+Every public function should include clear documentation.
+
+Use meaningful names.
+
+Avoid duplicate logic.
+
+Favor reusable services over copy-paste implementations.
+
+---
+
+TESTING
+
+Prepare the architecture for:
+
+unit tests
+
+integration tests
+
+future stress tests
+
+The design should be testable without requiring a live WhatsApp connection.
+
+---
+
+DELIVERABLE
+
+At the end of this prompt, generate:
+
+1. Complete project folder structure.
+2. Core architecture.
+3. Base classes.
+4. Managers.
+5. Services.
+6. Event bus.
+7. Listener loader.
+8. Middleware engine.
+9. Command engine.
+10. Session manager.
+11. Configuration system.
+12. Logger.
+13. Cache layer.
+14. Scheduler foundation.
+15. Database abstraction.
+16. Bootstrap sequence.
+17. Dependency injection strategy.
+18. Clear documentation explaining how every subsystem connects.
+
+Do not begin implementing anti systems, Telegram, web dashboard, AI assistant, or group management yet. This prompt is only responsible for creating the production-ready foundation that every later prompt will build upon.
