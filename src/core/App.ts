@@ -42,6 +42,7 @@ import { AntiEngine } from '../anti/core/AntiEngine';
 import { AntiMiddleware } from '../anti/core/AntiMiddleware';
 import { GroupManagementPlugin } from '../group/plugin/GroupManagementPlugin';
 import { GStatusPlugin } from '../gstatus/plugin/GStatusPlugin';
+import { AIPlugin } from '../ai/plugin/AIPlugin';
 import { TelegramBot } from '../telegram/TelegramBot';
 import { WebServer } from '../web/WebServer';
 import { PairingEngine } from '../pairing/PairingEngine';
@@ -203,6 +204,12 @@ export class App {
     await pluginManager.load(gstatusPlugin);
     container.register('GStatusPlugin', gstatusPlugin);
     log.info('Group Status Engine loaded');
+
+    // ── 17b. AI Assistant & Automation Engine ─────────────────────────────
+    const aiPlugin = new AIPlugin();
+    await pluginManager.load(aiPlugin);
+    container.register('AIPlugin', aiPlugin);
+    log.info('AI Assistant & Automation Engine loaded');
 
     // ── 18. Pairing Engine & Connection Manager ────────────────────────────
     this.heartbeat = new HeartbeatMonitor(eventBus);

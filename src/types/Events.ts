@@ -146,6 +146,17 @@ export interface PappybotEvents {
   'anti:permit_removed': { sessionId: string; groupJid: string; userJid: string; detectorId: string };
   'anti:config_changed': { sessionId: string; groupJid: string; detectorId: string; key: string; oldValue: unknown; newValue: unknown };
 
+  // ── AI Assistant ──────────────────────────────────────────────────────────
+  'ai:enabled':               { sessionId: string };
+  'ai:disabled':              { sessionId: string };
+  'ai:request':               { sessionId: string; senderJid: string; query: string; requestId: string };
+  'ai:response':              { sessionId: string; requestId: string; intent: string; success: boolean; durationMs: number; tokensUsed?: number };
+  'ai:error':                 { sessionId: string; requestId: string; error: string };
+  'ai:memory_cleared':        { sessionId: string; count: number };
+  'ai:automation_created':    { sessionId: string; taskId: string; name: string; cron: string };
+  'ai:automation_cancelled':  { sessionId: string; taskId: string };
+  'ai:automation_triggered':  { sessionId: string; taskId: string; name: string };
+
   // ── Group Status Engine ────────────────────────────────────────────────────────────
   'status:queued':            { sessionId: string; statusId: string; contentType: string };
   'status:started':           { sessionId: string; statusId: string; contentType: string; attempt: number };
