@@ -3,6 +3,7 @@
  * Requires: SESSION_OWNER (private chat only for security)
  */
 
+import { R } from '../../ui/ResponseFormatter';
 import { BaseCommand } from '../../commands/BaseCommand';
 import type { CommandMeta, CommandContext } from '../../types/Command';
 import type { AIConfigService } from '../services/AIConfigService';
@@ -27,7 +28,7 @@ export class SetAiTokenCommand extends BaseCommand {
 
     // Security: warn if used in a group
     if (ctx.message.chatType === 'group') {
-      await ctx.reply('⚠️ *Security warning:* Use this command in a *private chat* to avoid exposing your API key.');
+      await ctx.reply(R.warning('*Security warning:* Use this command in a *private chat* to avoid exposing your API key.'));
       return;
     }
 

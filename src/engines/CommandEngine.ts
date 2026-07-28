@@ -182,12 +182,27 @@ export class CommandEngine {
       }
     };
 
+    const replyGetIdFn = async (text: string): Promise<string | undefined> => {
+      if (this.response) {
+        return this.response.sendTextGetId?.(message.sessionId, message.chatJid, text, message.id);
+      }
+      return undefined;
+    };
+
+    const editMessageFn = async (messageId: string, newText: string): Promise<void> => {
+      if (this.response) {
+        await this.response.editText?.(message.sessionId, message.chatJid, messageId, newText);
+      }
+    };
+
     const ctx: CommandContext = {
       message,
       session,
       args,
       reply: replyFn,
       send: replyFn,
+      replyGetId: replyGetIdFn,
+      editMessage: editMessageFn,
     };
 
     // ── Execute ──────────────────────────────────────────────────────────

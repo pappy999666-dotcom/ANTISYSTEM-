@@ -2,6 +2,8 @@ import { BaseCommand } from '../../commands/BaseCommand';
 import type { CommandMeta, CommandContext } from '../../types/Command';
 import type { GroupEngine } from '../engine/GroupEngine';
 import { ROLES } from '../../types/Permissions';
+import { R } from '../../ui/ResponseFormatter';
+import { resolveTarget } from '../../utils/TargetResolver';
 
 export class PromoteCommand extends BaseCommand {
   readonly meta: CommandMeta = {
@@ -17,12 +19,8 @@ export class PromoteCommand extends BaseCommand {
 
   async execute(ctx: CommandContext): Promise<void> {
     const { message, args } = ctx;
-    const target = this.groupEngine.participants.resolveTarget(
-      message.mentions ?? [],
-      message.quotedMessage?.sender?.jid,
-      args.argv[0]
-    );
-    if (!target) return this.replyError(ctx, 'Specify a target via mention, reply, or phone number.');
+    const target = resolveTarget(message.mentions ?? [], message.quotedMessage?.sender?.jid, args.argv[0]);
+    if (!target) return this.replyError(ctx, 'Specify a target via @mention, reply, or phone number.');
 
     if (!this.groupEngine.participants.isBotAdmin(message.sessionId, message.chatJid)) {
       return this.replyError(ctx, 'I need to be an admin to promote members.');
@@ -30,7 +28,7 @@ export class PromoteCommand extends BaseCommand {
 
     const result = await this.groupEngine.participants.promote(message.sessionId, message.chatJid, target.jid);
     if (result.success) {
-      await this.replySuccess(ctx, `@${target.jid.split('@')[0]} has been promoted to admin.`);
+      await ctx.reply(R.promote(target.phone));
     } else {
       await this.replyError(ctx, `Failed to promote: ${result.error}`);
     }
@@ -51,12 +49,8 @@ export class DemoteCommand extends BaseCommand {
 
   async execute(ctx: CommandContext): Promise<void> {
     const { message, args } = ctx;
-    const target = this.groupEngine.participants.resolveTarget(
-      message.mentions ?? [],
-      message.quotedMessage?.sender?.jid,
-      args.argv[0]
-    );
-    if (!target) return this.replyError(ctx, 'Specify a target via mention, reply, or phone number.');
+    const target = resolveTarget(message.mentions ?? [], message.quotedMessage?.sender?.jid, args.argv[0]);
+    if (!target) return this.replyError(ctx, 'Specify a target via @mention, reply, or phone number.');
 
     if (!this.groupEngine.participants.isBotAdmin(message.sessionId, message.chatJid)) {
       return this.replyError(ctx, 'I need to be an admin to demote members.');
@@ -64,7 +58,7 @@ export class DemoteCommand extends BaseCommand {
 
     const result = await this.groupEngine.participants.demote(message.sessionId, message.chatJid, target.jid);
     if (result.success) {
-      await this.replySuccess(ctx, `@${target.jid.split('@')[0]} has been demoted.`);
+      await ctx.reply(R.demote(target.phone));
     } else {
       await this.replyError(ctx, `Failed to demote: ${result.error}`);
     }

@@ -2,8 +2,9 @@ import { BaseCommand } from '../../commands/BaseCommand';
 import type { CommandMeta, CommandContext } from '../../types/Command';
 import type { GroupEngine } from '../engine/GroupEngine';
 import { ROLES } from '../../types/Permissions';
+import { R } from '../../ui/ResponseFormatter';
 
-// ── Set Group Name ────────────────────────────────────────────────────────────
+// ── Set Group Name ─────────────────────────────────────────────────────────────
 
 export class SetGroupNameCommand extends BaseCommand {
   readonly meta: CommandMeta = {
@@ -19,18 +20,19 @@ export class SetGroupNameCommand extends BaseCommand {
   constructor(private readonly groupEngine: GroupEngine) { super(); }
 
   async execute(ctx: CommandContext): Promise<void> {
-    if (!this.requireArgs(ctx, 1, 'Usage: setname <new name>')) return;
+    if (!this.requireArgs(ctx, 1, 'setname <new name>')) return;
     const name = ctx.args.raw.trim();
+    const loadId = await this.replyLoading(ctx, 'Updating group name...');
     try {
       await this.groupEngine.setSubject(ctx.message.sessionId, ctx.message.chatJid, name);
-      await this.replySuccess(ctx, `Group name changed to: ${name}`);
+      await this.editOrReply(ctx, loadId, R.group(`Group name changed to: *${name}*`));
     } catch (err) {
-      await this.replyError(ctx, String(err));
+      await this.editOrReply(ctx, loadId, R.error(String(err)));
     }
   }
 }
 
-// ── Set Description ───────────────────────────────────────────────────────────
+// ── Set Description ────────────────────────────────────────────────────────────
 
 export class SetDescriptionCommand extends BaseCommand {
   readonly meta: CommandMeta = {
@@ -46,17 +48,18 @@ export class SetDescriptionCommand extends BaseCommand {
   constructor(private readonly groupEngine: GroupEngine) { super(); }
 
   async execute(ctx: CommandContext): Promise<void> {
-    if (!this.requireArgs(ctx, 1, 'Usage: setdesc <description>')) return;
+    if (!this.requireArgs(ctx, 1, 'setdesc <description>')) return;
+    const loadId = await this.replyLoading(ctx, 'Updating description...');
     try {
       await this.groupEngine.setDescription(ctx.message.sessionId, ctx.message.chatJid, ctx.args.raw.trim());
-      await this.replySuccess(ctx, 'Group description updated.');
+      await this.editOrReply(ctx, loadId, R.group('Group description updated.'));
     } catch (err) {
-      await this.replyError(ctx, String(err));
+      await this.editOrReply(ctx, loadId, R.error(String(err)));
     }
   }
 }
 
-// ── Group Link ────────────────────────────────────────────────────────────────
+// ── Group Link ─────────────────────────────────────────────────────────────────
 
 export class GroupLinkCommand extends BaseCommand {
   readonly meta: CommandMeta = {
@@ -74,18 +77,19 @@ export class GroupLinkCommand extends BaseCommand {
   async execute(ctx: CommandContext): Promise<void> {
     const { message, args } = ctx;
     const revoke = args.argv[0]?.toLowerCase() === 'revoke';
+    const loadId = await this.replyLoading(ctx, revoke ? 'Revoking link...' : 'Fetching link...');
     try {
       const link = revoke
         ? await this.groupEngine.revokeInviteLink(message.sessionId, message.chatJid)
         : await this.groupEngine.getInviteLink(message.sessionId, message.chatJid);
-      await ctx.reply(revoke ? `🔄 New invite link:\n${link}` : `🔗 Invite link:\n${link}`);
+      await this.editOrReply(ctx, loadId, R.link(link, revoke));
     } catch (err) {
-      await this.replyError(ctx, String(err));
+      await this.editOrReply(ctx, loadId, R.error(String(err)));
     }
   }
 }
 
-// ── Leave Group ───────────────────────────────────────────────────────────────
+// ── Leave Group ────────────────────────────────────────────────────────────────
 
 export class LeaveGroupCommand extends BaseCommand {
   readonly meta: CommandMeta = {
@@ -101,12 +105,12 @@ export class LeaveGroupCommand extends BaseCommand {
   constructor(private readonly groupEngine: GroupEngine) { super(); }
 
   async execute(ctx: CommandContext): Promise<void> {
-    await ctx.reply('👋 Leaving group...');
+    await ctx.reply(R.group('Leaving group...', 'DEPARTING'));
     await this.groupEngine.leaveGroup(ctx.message.sessionId, ctx.message.chatJid);
   }
 }
 
-// ── Set Group Picture ─────────────────────────────────────────────────────────
+// ── Set Group Picture ──────────────────────────────────────────────────────────
 
 export class SetGroupPictureCommand extends BaseCommand {
   readonly meta: CommandMeta = {
@@ -125,16 +129,17 @@ export class SetGroupPictureCommand extends BaseCommand {
     const buf = ctx.message.quotedMessage?.mediaBuffer as Buffer | undefined
       ?? ctx.message.mediaBuffer as Buffer | undefined;
     if (!buf) return this.replyError(ctx, 'Reply to an image to set the group picture.');
+    const loadId = await this.replyLoading(ctx, 'Uploading group picture...');
     try {
       await this.groupEngine.setGroupPicture(ctx.message.sessionId, ctx.message.chatJid, buf);
-      await this.replySuccess(ctx, 'Group picture updated.');
+      await this.editOrReply(ctx, loadId, R.group('Group picture updated.'));
     } catch (err) {
-      await this.replyError(ctx, String(err));
+      await this.editOrReply(ctx, loadId, R.error(String(err)));
     }
   }
 }
 
-// ── Set Profile Picture ───────────────────────────────────────────────────────
+// ── Set Profile Picture ────────────────────────────────────────────────────────
 
 export class SetProfilePictureCommand extends BaseCommand {
   readonly meta: CommandMeta = {
@@ -152,16 +157,17 @@ export class SetProfilePictureCommand extends BaseCommand {
     const buf = ctx.message.quotedMessage?.mediaBuffer as Buffer | undefined
       ?? ctx.message.mediaBuffer as Buffer | undefined;
     if (!buf) return this.replyError(ctx, 'Reply to an image to set the profile picture.');
+    const loadId = await this.replyLoading(ctx, 'Uploading profile picture...');
     try {
       await this.groupEngine.setProfilePicture(ctx.message.sessionId, buf);
-      await this.replySuccess(ctx, 'Profile picture updated.');
+      await this.editOrReply(ctx, loadId, R.success('Profile picture updated.'));
     } catch (err) {
-      await this.replyError(ctx, String(err));
+      await this.editOrReply(ctx, loadId, R.error(String(err)));
     }
   }
 }
 
-// ── Create Group ──────────────────────────────────────────────────────────────
+// ── Create Group ───────────────────────────────────────────────────────────────
 
 export class CreateGroupCommand extends BaseCommand {
   readonly meta: CommandMeta = {
@@ -183,18 +189,30 @@ export class CreateGroupCommand extends BaseCommand {
     const participants = message.mentions ?? [];
     if (!participants.length) return this.replyError(ctx, 'Mention at least one participant.');
 
+    const steps = [
+      { label: 'Creating group...', done: false },
+      { label: 'Adding participants...', done: false },
+      { label: 'Generating invite link...', done: false },
+    ];
+
+    const loadId = await ctx.replyGetId?.(R.progress(steps));
+
     try {
+      steps[0]!.done = true;
+      await ctx.editMessage?.(loadId ?? '', R.progress(steps));
+
       const { groupJid, inviteLink } = await this.groupEngine.createGroup(
-        message.sessionId,
-        name,
-        participants,
+        message.sessionId, name, participants,
         { creatorJid: message.sender?.jid as string | undefined }
       );
-      const lines = [`✅ Group created: ${name}`, `JID: ${groupJid}`];
-      if (inviteLink) lines.push(`Link: ${inviteLink}`);
-      await ctx.reply(lines.join('\n'));
+
+      steps[1]!.done = true;
+      steps[2]!.done = true;
+      await ctx.editMessage?.(loadId ?? '', R.progress(steps));
+
+      await this.editOrReply(ctx, loadId, R.create(name, groupJid, inviteLink));
     } catch (err) {
-      await this.replyError(ctx, String(err));
+      await this.editOrReply(ctx, loadId, R.error(String(err)));
     }
   }
 }

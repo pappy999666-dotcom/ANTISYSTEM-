@@ -40,7 +40,9 @@ export class TelegramBot {
     private readonly monitor: RuntimeMonitor,
     private readonly bus: EventBus,
     private readonly groupCache: GroupCache,
-    private readonly socketManager: SocketManager
+    private readonly socketManager: SocketManager,
+    private readonly commandEngine?: import('../engines/CommandEngine').CommandEngine,
+    private readonly responseEngine?: import('../engines/ResponseEngine').ResponseEngine
   ) {
     this.bot = new Bot(token);
     this.notificationService = new NotificationService(this.bot, bus);
@@ -77,8 +79,8 @@ export class TelegramBot {
         await ctx.reply(msg, { parse_mode: 'HTML', ...(opts ?? {}) } as never);
       };
 
-      // 1. Bridge mode — forward to WhatsApp
-      if (await handleBridgeMessage(ctx, this.socketManager)) return;
+      // 1. Bridge mode — forward to WhatsApp (with command execution)
+      if (await handleBridgeMessage(ctx, this.socketManager, this.commandEngine, this.sessionManager, this.responseEngine)) return;
 
       // 2. Registration flow (unregistered users)
       if (!telegramStore.isRegistered(id)) {

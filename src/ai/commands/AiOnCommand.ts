@@ -7,6 +7,8 @@ import { BaseCommand } from '../../commands/BaseCommand';
 import type { CommandMeta, CommandContext } from '../../types/Command';
 import type { AIConfigService } from '../services/AIConfigService';
 
+import { R } from '../../ui/ResponseFormatter';
+
 export class AiOnCommand extends BaseCommand {
   readonly meta: CommandMeta = {
     name: 'ai',
@@ -28,7 +30,7 @@ export class AiOnCommand extends BaseCommand {
     if (!sub || sub === 'on') {
       const settings = await this.configService.getSettings(ctx.session.config.id);
       if (!settings.apiKey) {
-        await ctx.reply('⚠️ Set your API key first:\n`.setaitoken <your-api-key>`');
+        await ctx.reply(R.warning('Set your API key first:\n`.setaitoken <your-api-key>`'));
         return;
       }
       await this.configService.enable(ctx.session.config.id);
@@ -37,7 +39,7 @@ export class AiOnCommand extends BaseCommand {
       await this.configService.disable(ctx.session.config.id);
       await this.replySuccess(ctx, 'AI assistant disabled.');
     } else {
-      await ctx.reply('Usage: `.ai on` or `.ai off`');
+      await ctx.reply(R.error('Usage: `.ai on` or `.ai off`', 'INVALID USAGE'));
     }
   }
 }

@@ -9,6 +9,8 @@ import type { AIConfigService } from '../services/AIConfigService';
 import type { AIMemoryService } from '../services/AIMemoryService';
 import type { AIAutomationService } from '../services/AIAutomationService';
 
+import { R } from '../../ui/ResponseFormatter';
+
 export class AiInfoCommand extends BaseCommand {
   readonly meta: CommandMeta = {
     name: 'aiinfo',
@@ -35,21 +37,18 @@ export class AiInfoCommand extends BaseCommand {
       this.automationService.getDashboardInfo(sessionId),
     ]);
 
-    const lines = [
-      `🤖 *AI Assistant Dashboard*`,
-      ``,
-      `*Status:* ${settings.enabled ? '✅ Active' : '❌ Inactive'}`,
-      `*Provider:* ${settings.provider}`,
-      `*Model:* ${settings.model}`,
-      `*Prefix:* \`${settings.prefix}\``,
-      `*Style:* ${settings.responseStyle}`,
-      `*Language:* ${settings.language}`,
-      `*API Key:* ${settings.apiKey ? '✅ Set' : '❌ Not set'}`,
-      ``,
-      `*Memory:* ${settings.memoryEnabled ? '✅ On' : '❌ Off'} (${memory.totalEntries} entries)`,
-      `*Automations:* ${automation.enabled}/${automation.total} active`,
-    ];
+    const body = [
+      `Status:    *${settings.enabled ? 'Active' : 'Inactive'}*`,
+      `Provider:  *${settings.provider}*`,
+      `Model:     *${settings.model}*`,
+      `Prefix:    \`${settings.prefix}\``,
+      `Style:     ${settings.responseStyle}`,
+      `Language:  ${settings.language}`,
+      `API Key:   *${settings.apiKey ? 'Set' : 'Not set'}*`,
+      `Memory:    *${settings.memoryEnabled ? 'On' : 'Off'}* (${memory.totalEntries} entries)`,
+      `Automations: *${automation.enabled}/${automation.total}* active`,
+    ].join('\n');
 
-    await ctx.reply(lines.join('\n'));
+    await ctx.reply(R.ai(body));
   }
 }

@@ -3,6 +3,7 @@
  * Requires: SESSION_OWNER
  */
 
+import { R } from '../../ui/ResponseFormatter';
 import { BaseCommand } from '../../commands/BaseCommand';
 import type { CommandMeta, CommandContext } from '../../types/Command';
 import type { AIConfigService } from '../services/AIConfigService';

@@ -48,6 +48,34 @@ export class ResponseEngine {
     return this.send({ sessionId, chatJid, type: 'text', text, quotedMessageId: quotedId });
   }
 
+  /** Send text and return the message ID (for live editing). */
+  async sendTextGetId(sessionId: string, chatJid: string, text: string, quotedId?: string): Promise<string | undefined> {
+    try {
+      return await this.sendText(sessionId, chatJid, text, quotedId);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Edit a previously sent text message.
+   * Uses Baileys sendMessage with edit key.
+   * LIMITATION: WhatsApp only allows editing messages sent by the bot itself.
+   */
+  async editText(sessionId: string, chatJid: string, messageId: string, newText: string): Promise<void> {
+    this.assertReady();
+    try {
+      await this.sendFn!(sessionId, chatJid, {
+        text: newText,
+        edit: { remoteJid: chatJid, id: messageId, fromMe: true },
+      });
+      log.trace('Message edited', { sessionId, chatJid, messageId });
+    } catch (err) {
+      // Edit not supported for this message type — fall back silently
+      log.debug('Message edit failed (not supported or expired)', { messageId, error: String(err) });
+    }
+  }
+
   async sendImage(
     sessionId: string,
     chatJid: string,

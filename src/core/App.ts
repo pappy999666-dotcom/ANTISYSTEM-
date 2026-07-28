@@ -50,6 +50,8 @@ import { ConnectionManager } from '../pairing/ConnectionManager';
 import { HeartbeatMonitor } from '../pairing/HeartbeatMonitor';
 import { SessionHealthService } from '../pairing/SessionHealthService';
 import { CleanupEngine } from '../pairing/CleanupEngine';
+import { PingCommand } from '../commands/builtin/PingCommand';
+import { SetSudoCommand, DelSudoCommand } from '../commands/builtin/SudoCommands';
 import type { DatabaseConfig } from '../types/Database';
 
 const log = logger.child('App');
@@ -126,6 +128,9 @@ export class App {
     // ── 7. Command Engine ──────────────────────────────────────────────────
     const prefix = config.get<string>('commands.prefix') ?? '!';
     const commandEngine = new CommandEngine(eventBus, cacheManager, permissions, prefix);
+    commandEngine.register(new PingCommand());
+    commandEngine.register(new SetSudoCommand(permissions));
+    commandEngine.register(new DelSudoCommand(permissions));
     container.register('CommandEngine', commandEngine);
 
     // ── 8. Response Engine ─────────────────────────────────────────────────
@@ -248,7 +253,9 @@ export class App {
         this.monitor,
         eventBus,
         sharedGroupCache,
-        socketManager
+        socketManager,
+        commandEngine,
+        responseEngine
       );
       await this.telegramBot.start();
       container.register('TelegramBot', this.telegramBot);

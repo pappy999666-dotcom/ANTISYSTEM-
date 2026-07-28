@@ -64,6 +64,10 @@ export interface CommandContext {
   reply: (text: string) => Promise<void>;
   /** Send helper — sends to same chat without quoting */
   send: (text: string) => Promise<void>;
+  /** Reply and return the sent message ID (for live editing) */
+  replyGetId?: (text: string) => Promise<string | undefined>;
+  /** Edit a previously sent message by ID */
+  editMessage?: (messageId: string, newText: string) => Promise<void>;
 }
 
 export interface CommandHandler {
