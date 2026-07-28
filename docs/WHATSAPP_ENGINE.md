@@ -464,3 +464,28 @@ if (message['yourNewMessageType']) {
 ```
 
 Baileys event handlers and future modules automatically receive the normalized form.
+
+## Prompt 2 lifecycle and event expansion
+
+The WhatsApp client exposes a small `WhatsAppClientOptions` object for supported
+Baileys browser profiles (`linux`, `macOS`, `ubuntu`, `chrome`, `firefox`, and
+`safari`) and an authentication-flow hint for QR or pairing-code based pairing.
+These options are passed only through documented Baileys socket configuration and
+are not used to spoof unsupported clients or bypass WhatsApp protections.
+
+The lifecycle now emits typed internal events for each significant transition:
+
+| Event | Purpose |
+|---|---|
+| `session:connecting` | Socket creation or Baileys `connecting` update started. |
+| `session:connection_update` | Raw connection state, reason, and status code surfaced for observability. |
+| `session:retry_required` | A transient disconnect will be retried after a bounded backoff. |
+| `session:restart_required` | Baileys requested a socket restart through `DisconnectReason.restartRequired`. |
+| `session:logged_out` | Permanent logout; only that session's auth/runtime state is purged. |
+| `session:stream_replaced` | Another stream replaced this socket; reconnect is intentionally stopped. |
+
+Additional event registry coverage is available for message history sync,
+poll updates, newsletter/channel updates, status updates, group join approvals,
+and profile name updates. Future modules should subscribe to these typed events
+instead of adding direct Baileys listeners unless they are extending the core
+registry itself.

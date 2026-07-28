@@ -20,6 +20,10 @@ export interface PappybotEvents {
   'session:state_changed': { sessionId: string; state: SessionState };
   'session:logged_out': { sessionId: string };
   'session:stream_replaced': { sessionId: string };
+  'session:connecting': { sessionId: string };
+  'session:connection_update': { sessionId: string; connection?: string; reason?: string; statusCode?: number };
+  'session:retry_required': { sessionId: string; attempt: number; backoffMs: number; reason?: string };
+  'session:restart_required': { sessionId: string; attempt: number; backoffMs: number };
 
   // ── Auth ──────────────────────────────────────────────────────────
   'auth:updated': { sessionId: string };
@@ -30,6 +34,8 @@ export interface PappybotEvents {
   'message:sent': { messageId: string; sessionId: string; chatJid: string };
   'message:updated': { sessionId: string; messageId: string; chatJid: string };
   'message:reaction': { sessionId: string; messageId: string; senderJid: string; reaction: string };
+  'message:poll_update': { sessionId: string; chatJid: string; messageId: string };
+  'message:history_set': { sessionId: string; count: number; isLatest?: boolean };
 
   // ── Receipts / Presence ───────────────────────────────────────────
   'receipt:updated': { sessionId: string; chatJid: string; messageIds: string[] };
@@ -67,6 +73,7 @@ export interface PappybotEvents {
   'group:participant_removed': { sessionId: string; groupJid: string; jid: string };
   'group:participant_promoted': { sessionId: string; groupJid: string; jid: string };
   'group:participant_demoted': { sessionId: string; groupJid: string; jid: string };
+  'group:join_approval': { sessionId: string; groupJid: string; participantJids: string[]; action: string };
 
   // ── Contacts ──────────────────────────────────────────────────────
   'contact:upserted': { sessionId: string; jid: string };
@@ -75,6 +82,7 @@ export interface PappybotEvents {
   // ── Profile ───────────────────────────────────────────────────────
   'profile:updated': { sessionId: string; jid: string };
   'profile:picture_updated': { sessionId: string; jid: string };
+  'profile:name_updated': { sessionId: string; jid: string; name?: string };
 
   // ── Media ─────────────────────────────────────────────────────────
   'media:uploaded': { sessionId: string; type: string; size: number };
@@ -86,6 +94,8 @@ export interface PappybotEvents {
   // ── App state / Chats ─────────────────────────────────────────────
   'chats:updated': { sessionId: string; chatJids: string[] };
   'app_state:sync': { sessionId: string; name: string };
+  'newsletter:updated': { sessionId: string; newsletterJid: string; update: Record<string, unknown> };
+  'status:updated': { sessionId: string; chatJid: string; update: Record<string, unknown> };
 
   // ── Scheduler ─────────────────────────────────────────────────────
   'task:scheduled': { jobId: string; cron: string };

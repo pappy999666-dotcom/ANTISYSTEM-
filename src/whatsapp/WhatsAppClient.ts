@@ -41,6 +41,23 @@ import { normalizeJid } from '../utils/jid';
 
 const log = logger.child('WhatsAppClient');
 
+export interface WhatsAppClientOptions {
+  /** Baileys-supported browser/client profile: linux, macOS, ubuntu, chrome, firefox, or safari. */
+  browserProfile?: 'linux' | 'macOS' | 'ubuntu' | 'chrome' | 'firefox' | 'safari';
+  /** Display name passed to browser profile helpers when supported. */
+  browserDisplayName?: string;
+  /** Optional mobile pairing mode hint. QR still remains available unless credentials already exist. */
+  authFlow?: 'qr' | 'pairing_code';
+}
+
+function resolveBrowser(baileys: Record<string, unknown>, options: WhatsAppClientOptions): unknown {
+  const browsers = baileys['Browsers'] as Record<string, Function> | undefined;
+  if (!browsers) return undefined;
+  const profile = options.browserProfile ?? 'ubuntu';
+  const label = options.browserDisplayName ?? 'PAPPYBOT V2';
+  return browsers[profile]?.(label) ?? browsers['ubuntu']?.(label);
+}
+
 export class WhatsAppClient {
   // ── Core deps ────────────────────────────────────────────────────────────
   private readonly sessionId: string;
@@ -68,7 +85,8 @@ export class WhatsAppClient {
     response: ResponseEngine,
     bus: EventBus,
     prefix: string,
-    storagePath: string
+    storagePath: string,
+    private readonly options: WhatsAppClientOptions = {}
   ) {
     this.sessionId = sessionId;
     this.sessionManager = sessionManager;
@@ -98,6 +116,7 @@ export class WhatsAppClient {
   async start(): Promise<void> {
     this.stopping = false;
     this.sessionManager.updateState(this.sessionId, { status: 'connecting' });
+    await this.bus.emit('session:connecting', { sessionId: this.sessionId });
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -120,10 +139,8 @@ export class WhatsAppClient {
         printQRInTerminal: false,
         logger: { level: 'silent' },
         getMessage: async () => undefined,
-        // Use a supported browser profile if available
-        browser: baileys['Browsers']
-          ? (baileys['Browsers'] as Record<string, Function>)['ubuntu']?.('Desktop')
-          : undefined,
+        // Use only Baileys-supported browser/client profiles.
+        browser: resolveBrowser(baileys, this.options),
       });
 
       // Register socket in the global registry (prevents duplicates)
@@ -427,6 +444,44 @@ export class WhatsAppClient {
       }
     });
 
+    // ── Message history and poll updates ───────────────────────────────────
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    sock.ev.on('messaging-history.set', async (history: Record<string, unknown>) => {
+      const messages = history['messages'];
+      await this.bus.emit('message:history_set', {
+        sessionId: this.sessionId,
+        count: Array.isArray(messages) ? messages.length : 0,
+        isLatest: history['isLatest'] as boolean | undefined,
+      });
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    sock.ev.on('messages.update', async (updates: unknown[]) => {
+      for (const update of updates) {
+        const u = update as Record<string, unknown>;
+        if (!u['pollUpdates']) continue;
+        const key = u['key'] as Record<string, unknown> | undefined;
+        await this.bus.emit('message:poll_update', {
+          sessionId: this.sessionId,
+          chatJid: key?.['remoteJid'] as string ?? '',
+          messageId: key?.['id'] as string ?? '',
+        });
+      }
+    });
+
+    // ── Newsletter/channel and status events (when surfaced by Baileys) ─────
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    sock.ev.on('newsletter.update', async (update: Record<string, unknown>) => {
+      const newsletterJid = normalizeJid(update['id'] as string ?? update['jid'] as string ?? '');
+      await this.bus.emit('newsletter:updated', { sessionId: this.sessionId, newsletterJid, update });
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    sock.ev.on('status.update', async (update: Record<string, unknown>) => {
+      const chatJid = normalizeJid(update['id'] as string ?? update['jid'] as string ?? 'status@broadcast');
+      await this.bus.emit('status:updated', { sessionId: this.sessionId, chatJid, update });
+    });
+
     // ── App state sync ────────────────────────────────────────────────────
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     sock.ev.on('app_state.sync.complete', async (names: unknown) => {
@@ -462,6 +517,20 @@ export class WhatsAppClient {
     } | undefined;
     const qr = update['qr'] as string | undefined;
     const isNewLogin = update['isNewLogin'] as boolean | undefined;
+    const statusCode = lastDisconnect?.error?.output?.statusCode;
+    const disconnectReason = lastDisconnect?.error?.message ?? (statusCode ? `Status ${statusCode}` : undefined);
+
+    await this.bus.emit('session:connection_update', {
+      sessionId: this.sessionId,
+      connection,
+      reason: disconnectReason,
+      statusCode,
+    });
+
+    if (connection === 'connecting') {
+      this.sessionManager.updateState(this.sessionId, { status: 'connecting' });
+      await this.bus.emit('session:connecting', { sessionId: this.sessionId });
+    }
 
     // ── QR code ──────────────────────────────────────────────────────────
     if (qr) {
@@ -509,7 +578,6 @@ export class WhatsAppClient {
 
     // ── Connection closed ─────────────────────────────────────────────────
     if (connection === 'close') {
-      const statusCode = lastDisconnect?.error?.output?.statusCode;
       const loggedOutCode = DisconnectReason?.['loggedOut'];
       const streamReplacedCode = DisconnectReason?.['connectionReplaced'];
       const restartRequired = DisconnectReason?.['restartRequired'];
@@ -517,7 +585,7 @@ export class WhatsAppClient {
       const isLoggedOut = loggedOutCode !== undefined && statusCode === loggedOutCode;
       const isStreamReplaced = streamReplacedCode !== undefined && statusCode === streamReplacedCode;
 
-      this.sessionManager.updateState(this.sessionId, { status: 'disconnected' });
+      this.sessionManager.updateState(this.sessionId, { status: 'disconnected', lastDisconnectReason: disconnectReason });
       await this.bus.emit('session:disconnected', {
         sessionId: this.sessionId,
         reason: lastDisconnect?.error?.message ?? `Status ${statusCode ?? 'unknown'}`,
@@ -526,13 +594,17 @@ export class WhatsAppClient {
       if (isLoggedOut) {
         // Permanent logout — clear auth so user can pair again
         log.warn('Session permanently logged out — auth cleared', { sessionId: this.sessionId });
+        this.sessionManager.updateState(this.sessionId, { status: 'logged_out' });
         this.authManager.clearAuthFiles(this.sessionId);
+        socketManager.removeSocket(this.sessionId, false);
         await this.bus.emit('session:logged_out', { sessionId: this.sessionId });
         return;
       }
 
       if (isStreamReplaced) {
         log.warn('Stream replaced (another device connected)', { sessionId: this.sessionId });
+        this.sessionManager.updateState(this.sessionId, { status: 'stream_replaced' });
+        socketManager.removeSocket(this.sessionId, false);
         await this.bus.emit('session:stream_replaced', { sessionId: this.sessionId });
         return;
       }
@@ -557,7 +629,11 @@ export class WhatsAppClient {
 
         const backoffMs = Math.min(SESSION_RECONNECT_DELAY_MS * attempts, 60_000);
         log.info('Reconnecting...', { sessionId: this.sessionId, attempt: attempts, backoffMs });
-        this.sessionManager.updateState(this.sessionId, { status: 'connecting' });
+        this.sessionManager.updateState(this.sessionId, { status: 'reconnecting' });
+        await this.bus.emit('session:retry_required', { sessionId: this.sessionId, attempt: attempts, backoffMs, reason: disconnectReason });
+        if (restartRequired !== undefined && statusCode === restartRequired) {
+          await this.bus.emit('session:restart_required', { sessionId: this.sessionId, attempt: attempts, backoffMs });
+        }
         await this.bus.emit('session:reconnected', { sessionId: this.sessionId, attempt: attempts });
 
         await sleep(backoffMs);

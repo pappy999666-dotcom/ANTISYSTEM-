@@ -7,7 +7,10 @@ export type SessionStatus =
   | 'qr_pending'
   | 'connecting'
   | 'connected'
+  | 'reconnecting'
   | 'disconnected'
+  | 'logged_out'
+  | 'stream_replaced'
   | 'error'
   | 'banned';
 
@@ -34,6 +37,8 @@ export interface SessionState {
   phoneNumber?: string;
   displayName?: string;
   error?: string;
+  /** Last low-level connection update reason/code, when available. */
+  lastDisconnectReason?: string;
   /** Number of reconnect attempts since last disconnect */
   reconnectAttempts: number;
 }
