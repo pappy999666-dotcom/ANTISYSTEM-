@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "permission_denied": "You don't have permission to use this command.",
+    "cooldown": "Please wait {remaining} before using this command again.",
+    "maintenance": "The bot is currently in maintenance mode.",
+    "rate_limit": "You're sending commands too fast. Please slow down.",
+    "unknown_command": "Unknown command. Type {prefix}help for a list of commands."
+  },
+  "general": {
+    "hello": "Hello, {name}!",
+    "goodbye": "Goodbye!"
+  }
+}

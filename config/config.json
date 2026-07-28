@@ -1,0 +1,56 @@
+{
+  "app": {
+    "name": "PAPPYBOT V2",
+    "version": "2.0.0",
+    "env": "development",
+    "debug": false
+  },
+  "logger": {
+    "level": "info",
+    "prettyPrint": true,
+    "logToFile": false,
+    "logDir": "logs"
+  },
+  "database": {
+    "driver": "sqlite",
+    "sqlite": {
+      "path": "storage/database.sqlite"
+    },
+    "mongodb": {
+      "uri": "",
+      "dbName": "pappybot"
+    },
+    "postgres": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "pappybot",
+      "user": "",
+      "password": ""
+    }
+  },
+  "cache": {
+    "driver": "memory",
+    "ttl": 300,
+    "cleanupInterval": 60
+  },
+  "sessions": {
+    "storagePath": "storage/sessions",
+    "maxSessions": 10,
+    "reconnectDelay": 5000,
+    "qrTimeout": 60000
+  },
+  "commands": {
+    "prefix": "!",
+    "cooldownDefault": 3000,
+    "maxAliases": 5
+  },
+  "scheduler": {
+    "timezone": "UTC",
+    "persistJobs": true
+  },
+  "security": {
+    "maxInputLength": 4096,
+    "rateLimitWindow": 60000,
+    "rateLimitMax": 30
+  }
+}
