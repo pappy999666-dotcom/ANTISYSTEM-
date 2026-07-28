@@ -10,7 +10,7 @@ import { telegramStore } from './core/TelegramStore';
 import { authGuard, registrationGate, forceJoinCheck } from './middleware/TelegramMiddleware';
 import { registerRegistrationHandlers, handleRegistrationText } from './handlers/RegistrationHandler';
 import { registerDashboardHandlers } from './handlers/DashboardHandler';
-import { registerSessionHandlers, handleSessionRenameText, handlePairNameText } from './handlers/SessionHandler';
+import { registerSessionHandlers, handleSessionRenameText, handlePairNameText, handlePairPhoneText } from './handlers/SessionHandler';
 import { registerGroupHandlers } from './handlers/GroupHandler';
 import { registerSettingsHandlers, handleSettingsText } from './handlers/SettingsHandler';
 import { registerOwnerHandlers, handleOwnerText } from './handlers/OwnerHandler';
@@ -98,7 +98,10 @@ export class TelegramBot {
       // 6. Pair session name input
       if (text && await handlePairNameText(id, text, this.sessionManager, reply)) return;
 
-      // 7. Registration domain/name steps for registered users re-entering flow
+      // 7. Pair phone number input (code flow)
+      if (text && await handlePairPhoneText(id, text, this.app, reply)) return;
+
+      // 8. Registration domain/name steps for registered users re-entering flow
       if (text && await handleRegistrationText(id, text, firstName, reply)) return;
 
       await next();

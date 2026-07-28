@@ -8,6 +8,7 @@ export type RegistrationStep =
   | 'idle'
   | 'awaiting_name'
   | 'awaiting_domain'
+  | 'awaiting_phone'
   | 'complete';
 
 export interface TelegramUser {

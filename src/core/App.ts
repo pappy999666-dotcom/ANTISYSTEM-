@@ -44,6 +44,11 @@ import { GroupManagementPlugin } from '../group/plugin/GroupManagementPlugin';
 import { GStatusPlugin } from '../gstatus/plugin/GStatusPlugin';
 import { TelegramBot } from '../telegram/TelegramBot';
 import { WebServer } from '../web/WebServer';
+import { PairingEngine } from '../pairing/PairingEngine';
+import { ConnectionManager } from '../pairing/ConnectionManager';
+import { HeartbeatMonitor } from '../pairing/HeartbeatMonitor';
+import { SessionHealthService } from '../pairing/SessionHealthService';
+import { CleanupEngine } from '../pairing/CleanupEngine';
 import type { DatabaseConfig } from '../types/Database';
 
 const log = logger.child('App');
@@ -54,6 +59,11 @@ export class App {
   private monitor?: RuntimeMonitor;
   private telegramBot?: TelegramBot;
   private webServer?: WebServer;
+  private heartbeat?: HeartbeatMonitor;
+  private connectionManager?: ConnectionManager;
+  pairingEngine?: PairingEngine;
+  sessionHealth?: SessionHealthService;
+  cleanupEngine?: CleanupEngine;
 
   /**
    * Initialize all subsystems and register them in the DI container.
@@ -194,7 +204,32 @@ export class App {
     container.register('GStatusPlugin', gstatusPlugin);
     log.info('Group Status Engine loaded');
 
-    // ── 18. Telegram Control Panel ────────────────────────────────────────
+    // ── 18. Pairing Engine & Connection Manager ────────────────────────────
+    this.heartbeat = new HeartbeatMonitor(eventBus);
+    this.heartbeat.start();
+    container.register('HeartbeatMonitor', this.heartbeat);
+
+    this.connectionManager = new ConnectionManager(this, sessionManager, this.heartbeat, eventBus);
+    container.register('ConnectionManager', this.connectionManager);
+
+    this.pairingEngine = new PairingEngine(this, sessionManager, this.heartbeat, eventBus);
+    container.register('PairingEngine', this.pairingEngine);
+
+    this.sessionHealth = new SessionHealthService(sessionManager, this.heartbeat);
+    container.register('SessionHealthService', this.sessionHealth);
+
+    this.cleanupEngine = new CleanupEngine(
+      sessionManager,
+      cacheManager,
+      scheduler,
+      this.heartbeat,
+      eventBus,
+      sessionsPath
+    );
+    container.register('CleanupEngine', this.cleanupEngine);
+    log.info('Pairing Engine & Connection Manager initialized');
+
+    // ── 19. Telegram Control Panel ────────────────────────────────────────
     const telegramToken = config.get<string>('telegram.botToken') ?? process.env['TELEGRAM_BOT_TOKEN'];
     if (telegramToken) {
       this.telegramBot = new TelegramBot(
@@ -213,7 +248,7 @@ export class App {
       log.warn('TELEGRAM_BOT_TOKEN not set — Telegram panel disabled');
     }
 
-    // ── 18. Web Dashboard ──────────────────────────────────────────────────────────────────
+    // ── 20. Web Dashboard ──────────────────────────────────────────────────────────────────
     const webEnabled = process.env['WEB_ENABLED'] !== 'false';
     if (webEnabled) {
       this.webServer = new WebServer(
@@ -264,14 +299,37 @@ export class App {
   }
 
   /**
-   * Stop a session gracefully.
+   * Stop a session gracefully (disconnect only — preserves auth).
    */
   async stopSession(sessionId: string): Promise<void> {
+    this.connectionManager?.markIntentionalStop(sessionId);
     const client = this.clients.get(sessionId);
     if (client) {
       await client.stop();
       this.clients.delete(sessionId);
     }
+  }
+
+  /**
+   * Logout a session: disconnect + clear runtime, preserve auth for re-pair.
+   */
+  async logoutSession(sessionId: string): Promise<void> {
+    this.connectionManager?.markIntentionalStop(sessionId);
+    const client = this.clients.get(sessionId);
+    if (client) await client.stop();
+    this.clients.delete(sessionId);
+    await this.cleanupEngine?.logout(sessionId);
+  }
+
+  /**
+   * Delete a session permanently — removes all auth, storage, cache, jobs.
+   */
+  async deleteSession(sessionId: string): Promise<void> {
+    this.connectionManager?.markIntentionalStop(sessionId);
+    const client = this.clients.get(sessionId);
+    if (client) await client.stop();
+    this.clients.delete(sessionId);
+    await this.cleanupEngine?.delete(sessionId);
   }
 
   /**
@@ -290,8 +348,12 @@ export class App {
     // Stop runtime monitor
     this.monitor?.stop();
 
+    // Stop heartbeat monitor
+    this.heartbeat?.stop();
+
     // Stop all WhatsApp sessions
     for (const [id] of this.clients) {
+      this.connectionManager?.markIntentionalStop(id);
       await this.stopSession(id);
     }
 

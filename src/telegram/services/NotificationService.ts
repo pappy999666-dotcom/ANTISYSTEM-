@@ -48,6 +48,38 @@ export class NotificationService {
         `❌ <b>Session Error</b>\nSession: <code>${p['sessionId']}</code>\n${String((p['error'] as Error)?.message ?? p['error'])}`);
     });
 
+    on('session:pairing_code', async (p) => {
+      await this.notifyAll(
+        `🔢 <b>Pairing Code</b>\nSession: <code>${p['sessionId']}</code>\n\n<code>${p['code']}</code>\n\n<i>Enter in WhatsApp → Linked Devices → Link with phone number</i>`);
+    });
+
+    on('session:qr', async (p) => {
+      await this.notifyAll(
+        `📷 <b>QR Code Ready</b>\nSession: <code>${p['sessionId']}</code>\n\n<i>Scan with WhatsApp → Linked Devices → Scan QR code</i>\n\n<code>${(p['qr'] as string).substring(0, 100)}...</code>`);
+    });
+
+    on('session:pair_completed', async (p) => {
+      await this.notifyAll(
+        `✅ <b>Pairing Complete</b>\nSession: <code>${p['sessionId']}</code> is now connected.`);
+    });
+
+    on('session:pair_failed', async (p) => {
+      await this.notifyAll(
+        `❌ <b>Pairing Failed</b>\nSession: <code>${p['sessionId']}</code>\n${p['error']}`);
+    });
+
+    on('session:reconnect_failed', async (p) => {
+      await this.notify(p['sessionId'] as string,
+        `⚠️ <b>Reconnect Failed</b>\nSession: <code>${p['sessionId']}</code>\nMax attempts (${p['attempts']}) reached.`);
+    });
+
+    on('session:health_changed', async (p) => {
+      if (!(p['healthy'] as boolean)) {
+        await this.notify(p['sessionId'] as string,
+          `💔 <b>Session Unhealthy</b>\nSession: <code>${p['sessionId']}</code>\n${p['reason']}`);
+      }
+    });
+
     on('anti:user_banned', async (p) => {
       await this.notify(p['sessionId'] as string,
         `🚫 <b>User Banned</b>\nGroup: <code>${p['groupJid']}</code>\nUser: <code>${p['userJid']}</code>\nReason: ${p['reason']}`);
@@ -84,6 +116,13 @@ export class NotificationService {
     const users = telegramStore.getAllUsers().filter(
       u => u.notificationsEnabled && !u.isBanned && u.defaultSessionId === sessionId
     );
+    for (const u of users) {
+      await this.sendTo(u.telegramId, text);
+    }
+  }
+
+  private async notifyAll(text: string): Promise<void> {
+    const users = telegramStore.getAllUsers().filter(u => u.notificationsEnabled && !u.isBanned);
     for (const u of users) {
       await this.sendTo(u.telegramId, text);
     }

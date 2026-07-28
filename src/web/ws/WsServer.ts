@@ -88,6 +88,15 @@ export class WsServer {
     forward('session:connected');
     forward('session:disconnected');
     forward('session:state_changed');
+    forward('session:qr');
+    forward('session:pairing_code');
+    forward('session:pairing_status');
+    forward('session:pair_completed');
+    forward('session:pair_failed');
+    forward('session:reconnect_started');
+    forward('session:reconnect_completed');
+    forward('session:reconnect_failed');
+    forward('session:health_changed');
     forward('group:updated');
     forward('monitor:snapshot');
     forward('anti:triggered');

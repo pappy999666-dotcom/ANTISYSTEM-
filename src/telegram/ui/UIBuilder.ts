@@ -29,6 +29,56 @@ export function statusBadge(status: string): string {
   return `${STATUS_ICON[status] ?? '⚪'} ${status.replace(/_/g, ' ')}`;
 }
 
+// ── Pairing status ───────────────────────────────────────────────────────────
+
+const PAIRING_STATUS_LABEL: Record<string, string> = {
+  initializing:    '⏳ Initializing Session...',
+  loading_auth:    '🔐 Loading Authentication...',
+  connecting:      '📡 Connecting...',
+  waiting_qr:      '📷 Waiting For QR Scan...',
+  waiting_code:    '🔢 Waiting For Pairing Code Entry...',
+  authenticating:  '🔑 Authenticating...',
+  loading_groups:  '👥 Loading Groups...',
+  synchronizing:   '🔄 Synchronizing...',
+  connected:       '🟢 Connected',
+  ready:           '✅ Ready',
+  disconnected:    '🔴 Disconnected',
+  reconnecting:    '🔁 Reconnecting...',
+  connection_lost: '⚠️ Connection Lost',
+  logged_out:      '⚫ Logged Out',
+  error:           '❌ Error',
+};
+
+export function pairingStatusText(sessionId: string, status: string, extra?: string): string {
+  const label = PAIRING_STATUS_LABEL[status] ?? `⏳ ${status}`;
+  return (
+    `<b>📱 Pairing: <code>${sessionId}</code></b>\n\n` +
+    `${label}` +
+    (extra ? `\n\n<code>${extra}</code>` : '')
+  );
+}
+
+export function sessionHealthText(
+  snap: { sessionId: string; label?: string; status: string; phoneNumber?: string; healthScore: number; reconnectCount: number; missedHeartbeats: number; socketHealthy: boolean; runtimeMs: number; error?: string }
+): string {
+  const filled = Math.round(snap.healthScore / 10);
+  const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
+  const runtimeMin = Math.floor(snap.runtimeMs / 60_000);
+  return (
+    `<b>📊 Session Health: ${snap.label ?? snap.sessionId}</b>\n\n` +
+    `<blockquote>` +
+    `Status: ${statusBadge(snap.status)}\n` +
+    `Phone: <code>${snap.phoneNumber ?? 'N/A'}</code>\n` +
+    `Health: [${bar}] ${snap.healthScore}/100\n` +
+    `Socket: ${snap.socketHealthy ? '🟢 Healthy' : '🔴 Unhealthy'}\n` +
+    `Reconnects: ${snap.reconnectCount}\n` +
+    `Missed HB: ${snap.missedHeartbeats}\n` +
+    `Runtime: ${runtimeMin}m` +
+    (snap.error ? `\nError: <code>${snap.error}</code>` : '') +
+    `</blockquote>`
+  );
+}
+
 // ── Welcome screen ────────────────────────────────────────────────────────────
 
 export function welcomeScreen(firstName: string): string {

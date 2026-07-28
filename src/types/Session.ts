@@ -12,7 +12,8 @@ export type SessionStatus =
   | 'logged_out'
   | 'stream_replaced'
   | 'error'
-  | 'banned';
+  | 'banned'
+  | 'destroyed';
 
 export interface SessionConfig {
   /** Unique session identifier */

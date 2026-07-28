@@ -39,6 +39,7 @@ export class TelegramStore {
   private bridges = new Map<number, BridgeSession>();
   private registrationSteps = new Map<number, RegistrationStep>();
   private pendingRenames = new Map<number, string>(); // telegramId → sessionId being renamed
+  private pendingPairSessions = new Map<number, string>(); // telegramId → sessionId awaiting phone
   private tempNames = new Map<number, string>(); // during registration flow
   private vpsConfig: VpsConfig = {};
   private forceJoin: ForceJoinConfig = { enabled: false, requiredChats: [] };
@@ -134,6 +135,20 @@ export class TelegramStore {
 
   clearPendingRename(telegramId: number): void {
     this.pendingRenames.delete(telegramId);
+  }
+
+  // ── Pending pair session (awaiting phone number) ───────────────────────────
+
+  setPendingPairSession(telegramId: number, sessionId: string): void {
+    this.pendingPairSessions.set(telegramId, sessionId);
+  }
+
+  getPendingPairSession(telegramId: number): string | undefined {
+    return this.pendingPairSessions.get(telegramId);
+  }
+
+  clearPendingPairSession(telegramId: number): void {
+    this.pendingPairSessions.delete(telegramId);
   }
 
   // ── Temp name (registration) ──────────────────────────────────────────────────────────────────

@@ -23,11 +23,21 @@ export interface PappybotEvents {
   'session:error': { sessionId: string; error: Error };
   'session:state_changed': { sessionId: string; state: SessionState };
   'session:logged_out': { sessionId: string };
+  'session:deleted': { sessionId: string };
   'session:stream_replaced': { sessionId: string };
   'session:connecting': { sessionId: string };
   'session:connection_update': { sessionId: string; connection?: string; reason?: string; statusCode?: number };
   'session:retry_required': { sessionId: string; attempt: number; backoffMs: number; reason?: string };
   'session:restart_required': { sessionId: string; attempt: number; backoffMs: number };
+  // ── Pairing Engine ────────────────────────────────────────────────
+  'session:pair_started': { sessionId: string; method: string };
+  'session:pair_completed': { sessionId: string };
+  'session:pair_failed': { sessionId: string; error: string };
+  'session:pairing_status': { sessionId: string; status: string };
+  'session:reconnect_started': { sessionId: string; attempt: number; delayMs: number };
+  'session:reconnect_completed': { sessionId: string; attempt: number };
+  'session:reconnect_failed': { sessionId: string; attempts: number };
+  'session:health_changed': { sessionId: string; healthy: boolean; reason: string };
 
   // ── Auth ──────────────────────────────────────────────────────────
   'auth:updated': { sessionId: string };

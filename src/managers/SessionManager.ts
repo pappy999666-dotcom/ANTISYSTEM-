@@ -46,6 +46,14 @@ export class SessionManager {
       throw new Error(`Session "${id}" already exists`);
     }
 
+    // Duplicate label check
+    if (config.label) {
+      const duplicate = [...this.sessions.values()].find(s => s.config.label === config.label);
+      if (duplicate) {
+        throw new Error(`Session label "${config.label}" already in use by session "${duplicate.config.id}"`);
+      }
+    }
+
     const fullConfig: SessionConfig = { ...config, id };
     const state: SessionState = {
       id,
