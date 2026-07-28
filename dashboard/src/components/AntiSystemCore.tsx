@@ -203,14 +203,9 @@ export default function AntiSystemCore() {
     const ra = radarAngleRef.current
     const radarR = RINGS[6].radius * scale
 
-    // Sweep gradient
+    // Sweep gradient — draw thin wedge
     ctx.save()
     ctx.rotate(ra)
-    const sweepGrad = ctx.createConicalGradient
-      ? undefined
-      : null
-
-    // Fallback: draw thin wedge
     const sweepAngle = 0.6
     ctx.beginPath()
     ctx.moveTo(0, 0)
