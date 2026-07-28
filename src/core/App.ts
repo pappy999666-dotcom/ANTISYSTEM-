@@ -38,6 +38,8 @@ import { RuntimeMonitor } from '../services/RuntimeMonitor';
 import { socketManager } from '../whatsapp/SocketManager';
 import { GroupCache } from '../whatsapp/GroupCache';
 import { ContactCache } from '../whatsapp/ContactCache';
+import { AntiEngine } from '../anti/core/AntiEngine';
+import { AntiMiddleware } from '../anti/core/AntiMiddleware';
 import type { DatabaseConfig } from '../types/Database';
 
 const log = logger.child('App');
@@ -162,6 +164,18 @@ export class App {
     );
     this.monitor.start();
     container.register('RuntimeMonitor', this.monitor);
+
+    // ── 15. Anti Engine ────────────────────────────────────────────────────
+    const globalOwnerJid = `${(config.get<string>('security.globalOwner') ?? '').replace(/\D/g, '')}@s.whatsapp.net`;
+    const antiEngine = new AntiEngine(
+      socketManager,
+      sharedGroupCache,
+      eventBus,
+      { ownerJid: globalOwnerJid, botJid: globalOwnerJid, sudoJids: [] }
+    );
+    container.register('AntiEngine', antiEngine);
+    middlewareEngine.use(new AntiMiddleware(antiEngine));
+    log.info('Anti Engine initialized');
 
     this.isRunning = true;
     log.success('All subsystems initialized');

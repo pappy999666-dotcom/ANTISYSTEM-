@@ -38,6 +38,7 @@ import { ContactCache } from './ContactCache';
 import { SendMessageService } from './SendMessageService';
 import { MediaEngine } from './MediaEngine';
 import { normalizeJid } from '../utils/jid';
+import { MessageContext } from './MessageContext';
 
 const log = logger.child('WhatsAppClient');
 
@@ -244,7 +245,14 @@ export class WhatsAppClient {
 
         const normalized = this.normalizer.normalize(rawMsg, this.sessionId, ownerJid);
         if (normalized) {
-          await this.bus.emit('message:received', { message: normalized });
+          const ctx = new MessageContext(
+            normalized,
+            normalizeJid(ownerJid),
+            normalizeJid(ownerJid),
+            [],
+            this.groupCache
+          );
+          await this.bus.emit('message:received', { message: normalized, context: ctx });
           await this.pipeline.process(normalized, session);
         }
       }

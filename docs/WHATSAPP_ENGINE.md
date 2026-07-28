@@ -292,6 +292,7 @@ await groupService.updateParticipants(sessionId, groupJid, 'promote', ['...']);
 // Settings
 await groupService.setAnnounce(sessionId, groupJid, true);  // only admins can send
 await groupService.setRestrict(sessionId, groupJid, true);  // only admins edit info
+await groupService.setJoinApproval(sessionId, groupJid, true); // require admin approval to join
 await groupService.setDisappearingMessages(sessionId, groupJid, 604800); // 7 days
 
 // Invite
@@ -345,7 +346,52 @@ const exists = await profileService.isOnWhatsApp(sessionId, '15551234567');
 
 ---
 
-## Permission Helpers
+## Message Context Helper
+
+**File:** `src/whatsapp/MessageContext.ts`
+
+Wraps `ExtendedNormalizedMessage` with typed accessor methods. Passed as `context`
+on every `message:received` event. Future commands receive this instead of the raw message.
+
+```typescript
+eventBus.on('message:received', ({ message, context }) => {
+  if (!context) return;
+
+  context.senderJid;        // '15551234567@s.whatsapp.net'
+  context.chatJid;          // group or private JID
+  context.messageId;        // Baileys message ID
+  context.messageType;      // 'text' | 'image' | ...
+  context.timestamp;        // Unix seconds
+
+  context.isGroup();        // boolean
+  context.isPrivate();      // boolean
+  context.isOwner();        // sender === global owner
+  context.isSudo();         // owner or in sudoJids
+  context.isAdmin();        // group admin (uses GroupCache)
+  context.isSuperAdmin();   // group creator
+  context.isBotAdmin();     // bot is admin in the group
+  context.isSessionOwner(); // sender === bot account
+
+  context.getText();        // plain text or undefined
+  context.getCaption();     // media caption
+  context.getMentions();    // string[]
+  context.isForwarded();    // boolean
+  context.isViewOnce();     // boolean
+
+  context.hasQuoted();      // boolean
+  context.getQuotedId();    // quoted message ID
+  context.getQuotedText();  // quoted text
+
+  context.getMediaInfo();   // { mimeType, fileLength, ... }
+  context.getPollInfo();    // { name, options, selectableCount }
+  context.getReactionInfo(); // { targetMessageId, emoji }
+  context.getLinkPreview(); // { url, title, description }
+});
+```
+
+---
+
+
 
 **File:** `src/whatsapp/PermissionHelpers.ts`
 

@@ -292,6 +292,24 @@ export class GroupService {
   }
 
   /**
+   * Enable or disable join approval (membership approval) for a group.
+   * Requires the bot to be an admin.
+   */
+  async setJoinApproval(sessionId: string, groupJid: string, enable: boolean): Promise<void> {
+    const sock = this.socketManager.requireSocket(sessionId);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      await sock.groupMemberAddMode(groupJid, enable ? 'approval' : 'all_member_add');
+      this.groupCache.patch(groupJid, { joinApprovalMode: enable });
+      await this.bus.emit('group:updated', { sessionId, groupJid });
+      log.info('Group join approval updated', { sessionId, groupJid, enable });
+    } catch (err) {
+      log.error('Failed to set join approval', { sessionId, groupJid, error: String(err) });
+      throw err;
+    }
+  }
+
+  /**
    * Configure disappearing messages for a group.
    * @param duration - Seconds. 0 to disable. Common values: 86400 (1d), 604800 (7d), 7776000 (90d).
    */

@@ -8,6 +8,10 @@ import type { NormalizedMessage } from './Message';
 import type { SessionState } from './Session';
 import type { GroupMetadata } from './Group';
 
+// Forward-declare to avoid circular import — MessageContext is in whatsapp/
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MessageContextLike = any;
+
 export interface PappybotEvents {
   // ── Session lifecycle ─────────────────────────────────────────────
   'session:created': { sessionId: string };
@@ -29,7 +33,7 @@ export interface PappybotEvents {
   'auth:updated': { sessionId: string };
 
   // ── Messages ──────────────────────────────────────────────────────
-  'message:received': { message: NormalizedMessage };
+  'message:received': { message: NormalizedMessage; context?: MessageContextLike };
   'message:deleted': { messageId: string; sessionId: string; chatJid: string };
   'message:sent': { messageId: string; sessionId: string; chatJid: string };
   'message:updated': { sessionId: string; messageId: string; chatJid: string };
@@ -112,6 +116,18 @@ export interface PappybotEvents {
 
   // ── Runtime Monitor ───────────────────────────────────────────────
   'monitor:snapshot': { sessionId: string; stats: Record<string, unknown> };
+
+  // ── Anti System ───────────────────────────────────────────────────
+  'anti:triggered': { sessionId: string; groupJid: string; senderJid: string; detectorId: string; action: string; reason: string };
+  'anti:message_deleted': { sessionId: string; groupJid: string; messageId: string; reason: string };
+  'anti:user_kicked': { sessionId: string; groupJid: string; userJid: string; reason: string };
+  'anti:user_banned': { sessionId: string; groupJid: string; userJid: string; reason: string; bannedAt: number; permanent: boolean };
+  'anti:user_unbanned': { sessionId: string; groupJid: string; userJid: string };
+  'anti:warn_added': { sessionId: string; groupJid: string; userJid: string; count: number; limit: number; reason: string };
+  'anti:warn_removed': { sessionId: string; groupJid: string; userJid: string; count: number };
+  'anti:permit_added': { sessionId: string; groupJid: string; userJid: string; detectorId: string };
+  'anti:permit_removed': { sessionId: string; groupJid: string; userJid: string; detectorId: string };
+  'anti:config_changed': { sessionId: string; groupJid: string; detectorId: string; key: string; oldValue: unknown; newValue: unknown };
 }
 
 export type EventName = keyof PappybotEvents;
