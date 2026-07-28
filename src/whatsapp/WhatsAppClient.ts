@@ -125,15 +125,20 @@ export class WhatsAppClient {
 
       const makeWASocket = (baileys['default'] ?? baileys['makeWASocket']) as Function;
       const DisconnectReason = baileys['DisconnectReason'] as Record<string, number> | undefined;
+      const makeCacheableSignalKeyStore = baileys['makeCacheableSignalKeyStore'] as Function | undefined;
+      const fetchLatestBaileysVersion = baileys['fetchLatestBaileysVersion'] as Function | undefined;
 
       if (!makeWASocket) {
-        throw new Error(
-          'makeWASocket not found in @crysnovax/baileys. Check the installed version.'
-        );
+        throw new Error('makeWASocket not found in @crysnovax/baileys. Check the installed version.');
       }
 
       // Load or restore auth state
       const { state, saveCreds } = await this.authManager.loadAuthState(this.sessionId);
+
+      // Fetch latest WA version (fall back to known good version)
+      const { version } = fetchLatestBaileysVersion
+        ? await (fetchLatestBaileysVersion as () => Promise<{ version: number[] }>)().catch(() => ({ version: [2, 3000, 1017531287] }))
+        : { version: [2, 3000, 1017531287] };
 
       // Baileys requires a pino-compatible logger with .child() support
       const noop = (): void => {};
@@ -143,13 +148,31 @@ export class WhatsAppClient {
         child: () => baileysLogger,
       };
 
+      // Build auth with cacheable signal key store for better performance
+      const authState = makeCacheableSignalKeyStore
+        ? {
+            creds: (state as Record<string, unknown>)['creds'],
+            keys: makeCacheableSignalKeyStore((state as Record<string, unknown>)['keys'], baileysLogger),
+          }
+        : state;
+
       const sock: BaileysSocket = makeWASocket({
-        auth: state,
+        version,
+        auth: authState,
         printQRInTerminal: false,
         logger: baileysLogger,
-        getMessage: async () => undefined,
-        // Use only Baileys-supported browser/client profiles.
+        getMessage: async () => ({ conversation: '' }),
         browser: resolveBrowser(baileys, this.options),
+        connectTimeoutMs: 60_000,
+        defaultQueryTimeoutMs: 30_000,
+        keepAliveIntervalMs: 25_000,
+        retryRequestDelayMs: 500,
+        maxMsgRetryCount: 3,
+        syncFullHistory: false,
+        markOnlineOnConnect: false,
+        generateHighQualityLinkPreview: false,
+        fireInitQueries: true,
+        emitOwnEvents: false,
       });
 
       // Register socket in the global registry (prevents duplicates)
@@ -553,20 +576,17 @@ export class WhatsAppClient {
       // Suppress QR for code-method sessions (sess_ prefix = phone-based pairing)
       if (this.sessionId.startsWith('sess_')) {
         log.debug('QR suppressed for code-method session', { sessionId: this.sessionId });
-        return;
+        // Do NOT return — connection.update may carry both qr and connection fields
+      } else {
+        this.sessionManager.updateState(this.sessionId, { status: 'qr_pending' });
+        await this.bus.emit('session:qr', { sessionId: this.sessionId, qr });
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const qrTerminal = require('qrcode-terminal') as { generate: (s: string, o: object) => void };
+          qrTerminal.generate(qr, { small: true });
+        } catch { /* unavailable */ }
+        log.info('QR code generated — scan with WhatsApp', { sessionId: this.sessionId });
       }
-      this.sessionManager.updateState(this.sessionId, { status: 'qr_pending' });
-      await this.bus.emit('session:qr', { sessionId: this.sessionId, qr });
-
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const qrTerminal = require('qrcode-terminal') as { generate: (s: string, o: object) => void };
-        qrTerminal.generate(qr, { small: true });
-      } catch {
-        // qrcode-terminal unavailable
-      }
-
-      log.info('QR code generated — scan with WhatsApp', { sessionId: this.sessionId });
     }
 
     // ── Connection open ───────────────────────────────────────────────────
