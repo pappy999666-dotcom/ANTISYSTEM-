@@ -41,6 +41,7 @@ import { ContactCache } from '../whatsapp/ContactCache';
 import { AntiEngine } from '../anti/core/AntiEngine';
 import { AntiMiddleware } from '../anti/core/AntiMiddleware';
 import { GroupManagementPlugin } from '../group/plugin/GroupManagementPlugin';
+import { GStatusPlugin } from '../gstatus/plugin/GStatusPlugin';
 import { TelegramBot } from '../telegram/TelegramBot';
 import { WebServer } from '../web/WebServer';
 import type { DatabaseConfig } from '../types/Database';
@@ -187,7 +188,13 @@ export class App {
     await pluginManager.load(groupPlugin);
     log.info('Group Management plugin loaded');
 
-    // ── 17. Telegram Control Panel ────────────────────────────────────────
+    // ── 17. Group Status Engine ──────────────────────────────────────────────────────────────────
+    const gstatusPlugin = new GStatusPlugin();
+    await pluginManager.load(gstatusPlugin);
+    container.register('GStatusPlugin', gstatusPlugin);
+    log.info('Group Status Engine loaded');
+
+    // ── 18. Telegram Control Panel ────────────────────────────────────────
     const telegramToken = config.get<string>('telegram.botToken') ?? process.env['TELEGRAM_BOT_TOKEN'];
     if (telegramToken) {
       this.telegramBot = new TelegramBot(

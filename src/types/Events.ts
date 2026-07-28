@@ -135,6 +135,19 @@ export interface PappybotEvents {
   'anti:permit_added': { sessionId: string; groupJid: string; userJid: string; detectorId: string };
   'anti:permit_removed': { sessionId: string; groupJid: string; userJid: string; detectorId: string };
   'anti:config_changed': { sessionId: string; groupJid: string; detectorId: string; key: string; oldValue: unknown; newValue: unknown };
+
+  // ── Group Status Engine ────────────────────────────────────────────────────────────
+  'status:queued':            { sessionId: string; statusId: string; contentType: string };
+  'status:started':           { sessionId: string; statusId: string; contentType: string; attempt: number };
+  'status:completed':         { sessionId: string; statusId: string; messageId: string; contentType: string; durationMs: number };
+  'status:failed':            { sessionId: string; statusId: string; error: string; attempts?: number };
+  'status:retry':             { sessionId: string; statusId: string; attempt: number; backoffMs: number; error: string };
+  'status:cancelled':         { sessionId: string; statusId: string };
+  'status:preview_reused':    { sessionId: string; statusId: string };
+  'status:preview_generated': { sessionId: string; statusId: string };
+  'status:media_prepared':    { sessionId: string; statusId: string; contentType: string };
+  'status:queue_finished':    { sessionId: string };
+  'status:togstatus_sent':    { sessionId: string; groupJid: string; statusId: string };
 }
 
 export type EventName = keyof PappybotEvents;
