@@ -153,29 +153,48 @@ export class PairingEngine {
   }
 
   private async _requestCode(sessionId: string, phoneNumber: string, customCode?: string): Promise<PairingResult> {
-    // Wait briefly for socket to be ready
-    await this._waitForSocket(sessionId, 5000);
+    // Wait for socket to be ready (created by startSession)
+    await this._waitForSocket(sessionId, 8000);
+
+    // Brief delay — let Baileys finish internal setup before requesting code
+    await new Promise(r => setTimeout(r, 1_500));
 
     const sock = socketManager.getSocket(sessionId);
-    if (!sock) {
-      throw new Error(`Socket not ready for session "${sessionId}"`);
-    }
+    if (!sock) throw new Error(`Socket not ready for session "${sessionId}"`);
 
     const resolved = resolveCustomCode(customCode ?? process.env['PAIRING_CODE']);
+    const phone = phoneNumber.replace(/\D/g, '');
 
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      const code = await sock.requestPairingCode(phoneNumber.replace(/\D/g, ''), resolved) as string;
-      log.info('Pairing code generated', { sessionId, code });
-      this._emitStatus(sessionId, 'waiting_code');
-      await this.bus.emit('session:pairing_code', { sessionId, code });
-      return { sessionId, method: 'code', pairingCode: code, status: 'waiting_code' };
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      log.error('Pairing code request failed', { sessionId, error: error.message });
-      await this.bus.emit('session:pair_failed', { sessionId, error: error.message });
-      throw err;
+    // Retry up to 3 times with delay — mirrors Waiq's retry loop
+    let code: string | undefined;
+    let lastErr: Error | undefined;
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        if (attempt > 1) await new Promise(r => setTimeout(r, 2_000 * attempt));
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        const result = await sock.requestPairingCode(phone, resolved) as string;
+        if (result && typeof result === 'string') { code = result; break; }
+      } catch (err) {
+        lastErr = err instanceof Error ? err : new Error(String(err));
+        const sc = (err as Record<string, unknown>)?.['output'] as Record<string, unknown> | undefined;
+        const statusCode = sc?.['statusCode'] as number | undefined;
+        log.warn('Pair attempt failed', { sessionId, attempt, error: lastErr.message });
+        // Permanent failures — don't retry
+        if (statusCode === 401 || statusCode === 403 || statusCode === 404) break;
+      }
     }
+
+    if (!code) {
+      const error = lastErr ?? new Error('No pairing code returned');
+      await this.bus.emit('session:pair_failed', { sessionId, error: error.message });
+      throw error;
+    }
+
+    log.info('Pairing code generated', { sessionId, code });
+    this._emitStatus(sessionId, 'waiting_code');
+    await this.bus.emit('session:pairing_code', { sessionId, code });
+    return { sessionId, method: 'code', pairingCode: code, status: 'waiting_code' };
   }
 
   /** Cancel a pending pairing flow */

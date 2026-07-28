@@ -35,28 +35,16 @@ async function main(): Promise<void> {
   // Register shutdown handlers before starting sessions
   registerShutdownHandlers(app);
 
-  // ── Create default session ─────────────────────────────────────────────
+  // ── No auto-session on startup ───────────────────────────────────────
+  // Sessions are created and paired via the Telegram panel or Web API.
+  // Set GLOBAL_OWNER_NUMBER in .env only to set the owner JID for permissions —
+  // it does NOT auto-start a WhatsApp session.
   const ownerNumber = process.env['GLOBAL_OWNER_NUMBER'];
-  if (!ownerNumber) {
-    log.warn(
-      'GLOBAL_OWNER_NUMBER not set. Set it in .env to auto-start a session.\n' +
-      'You can start sessions manually via the Web API (/api/sessions) or Telegram panel.'
-    );
-    return;
+  if (ownerNumber) {
+    log.info('Owner configured. Use Telegram panel or Web API to pair a session.', { owner: ownerNumber });
+  } else {
+    log.warn('GLOBAL_OWNER_NUMBER not set — set it in .env for owner permissions.');
   }
-
-  const { container } = await import('./Container');
-  const { SessionManager: SM } = await import('../managers/SessionManager');
-  const sessionManager = container.resolve<InstanceType<typeof SM>>('SessionManager');
-
-  const session = sessionManager.create({
-    owner: `${ownerNumber}@s.whatsapp.net`,
-    label: 'default',
-    settings: {},
-  });
-
-  log.info('Starting default session...', { sessionId: session.config.id });
-  await app.startSession(session.config.id);
 }
 
 function registerShutdownHandlers(app: App): void {

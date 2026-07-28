@@ -6,11 +6,21 @@
  */
 
 import type { Bot } from 'grammy';
+import { InputFile } from 'grammy';
+import QRCode from 'qrcode';
 import type { EventBus } from '../../events/EventBus';
 import { telegramStore } from '../core/TelegramStore';
 import { logger } from '../../logger/Logger';
 
 const log = logger.child('NotificationService');
+const OWNER_TG_ID = Number(process.env['TELEGRAM_OWNER_ID'] ?? '0');
+
+// Track pairing messages so we can edit them on connect (Waiq-style)
+const pairMsgs = new Map<string, { code: string; edit: (html: string) => Promise<void> }>();
+
+export function registerPairMsg(phone: string, code: string, edit: (html: string) => Promise<void>): void {
+  pairMsgs.set(phone, { code, edit });
+}
 
 export class NotificationService {
   private readonly bot: Bot;
@@ -29,8 +39,20 @@ export class NotificationService {
     };
 
     on('session:connected', async (p) => {
+      const phone = (p['phoneNumber'] as string ?? '').replace(/\D/g, '');
+      // Edit the pairing message to show connected (Waiq-style)
+      const pm = pairMsgs.get(phone);
+      if (pm) {
+        await pm.edit(
+          `<b>\u2705 Connected!</b>\n\n` +
+          `<blockquote>Number: <code>+${phone}</code>\n\n` +
+          `Code: <code>${pm.code}</code>\n\n` +
+          `<b>Session is now active.</b></blockquote>`
+        ).catch(() => void 0);
+        pairMsgs.delete(phone);
+      }
       await this.notify(p['sessionId'] as string,
-        `🟢 <b>WhatsApp Connected</b>\nSession: <code>${p['sessionId']}</code>\nPhone: ${p['phoneNumber'] ?? 'N/A'}`);
+        `\ud83d\udfe2 <b>WhatsApp Connected</b>\nSession: <code>${p['sessionId']}</code>\nPhone: ${p['phoneNumber'] ?? 'N/A'}`);
     });
 
     on('session:disconnected', async (p) => {
@@ -54,8 +76,22 @@ export class NotificationService {
     });
 
     on('session:qr', async (p) => {
-      await this.notifyAll(
-        `📷 <b>QR Code Ready</b>\nSession: <code>${p['sessionId']}</code>\n\n<i>Scan with WhatsApp → Linked Devices → Scan QR code</i>\n\n<code>${(p['qr'] as string).substring(0, 100)}...</code>`);
+      const qrString = p['qr'] as string;
+      const sessionId = p['sessionId'] as string;
+      try {
+        // Generate QR as PNG buffer and send as photo
+        const buffer = await QRCode.toBuffer(qrString, { type: 'png', width: 400, margin: 2 });
+        const caption = `📷 <b>QR Code Ready</b>\nSession: <code>${sessionId}</code>\n\n<i>Open WhatsApp → Linked Devices → Link a Device → Scan QR</i>`;
+        await this.bot.api.sendPhoto(
+          OWNER_TG_ID,
+          new InputFile(buffer, 'qr.png'),
+          { caption, parse_mode: 'HTML' }
+        );
+      } catch (err) {
+        log.warn('Failed to send QR image, falling back to text', { error: String(err) });
+        await this.sendTo(OWNER_TG_ID,
+          `📷 <b>QR Code Ready</b>\nSession: <code>${sessionId}</code>\n\n<i>Scan with WhatsApp → Linked Devices → Scan QR code</i>`);
+      }
     });
 
     on('session:pair_completed', async (p) => {

@@ -135,10 +135,18 @@ export class WhatsAppClient {
       // Load or restore auth state
       const { state, saveCreds } = await this.authManager.loadAuthState(this.sessionId);
 
+      // Baileys requires a pino-compatible logger with .child() support
+      const noop = (): void => {};
+      const baileysLogger = {
+        level: 'silent', trace: noop, debug: noop, info: noop,
+        warn: noop, error: noop, fatal: noop,
+        child: () => baileysLogger,
+      };
+
       const sock: BaileysSocket = makeWASocket({
         auth: state,
         printQRInTerminal: false,
-        logger: { level: 'silent' },
+        logger: baileysLogger,
         getMessage: async () => undefined,
         // Use only Baileys-supported browser/client profiles.
         browser: resolveBrowser(baileys, this.options),
@@ -619,11 +627,14 @@ export class WhatsAppClient {
 
       // Reconnect with back-off for transient disconnections
       if (!this.stopping) {
-        if (
-          restartRequired !== undefined &&
-          statusCode === restartRequired
-        ) {
-          log.info('Reconnecting (restart required)', { sessionId: this.sessionId });
+        // restartRequired (515) — creds just saved, reconnect quickly with no backoff
+        if (restartRequired !== undefined && statusCode === restartRequired) {
+          log.info('Restart required — reconnecting in 500ms', { sessionId: this.sessionId });
+          this.sessionManager.updateState(this.sessionId, { status: 'reconnecting' });
+          await sleep(500);
+          socketManager.removeSocket(this.sessionId, false);
+          await this.start();
+          return;
         }
 
         const attempts = this.sessionManager.incrementReconnectAttempts(this.sessionId);
@@ -639,13 +650,10 @@ export class WhatsAppClient {
         log.info('Reconnecting...', { sessionId: this.sessionId, attempt: attempts, backoffMs });
         this.sessionManager.updateState(this.sessionId, { status: 'reconnecting' });
         await this.bus.emit('session:retry_required', { sessionId: this.sessionId, attempt: attempts, backoffMs, reason: disconnectReason });
-        if (restartRequired !== undefined && statusCode === restartRequired) {
-          await this.bus.emit('session:restart_required', { sessionId: this.sessionId, attempt: attempts, backoffMs });
-        }
         await this.bus.emit('session:reconnected', { sessionId: this.sessionId, attempt: attempts });
 
         await sleep(backoffMs);
-        socketManager.removeSocket(this.sessionId, false); // socket already dead
+        socketManager.removeSocket(this.sessionId, false);
         await this.start();
       }
     }

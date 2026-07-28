@@ -221,14 +221,13 @@ export function pairMethodKeyboard(sessionId: string): InlineKeyboard {
     .text('🔙 Cancel', cb('sessions'));
 }
 
-export function pairingCodeText(code: string, sessionId: string): string {
+export function pairingCodeText(code: string, phone: string): string {
   return (
-    `<b>🔢 Pairing Code</b>\n\n` +
-    `Session: <code>${sessionId}</code>\n\n` +
-    `<blockquote>Enter this code in WhatsApp:\n` +
-    `<b>Linked Devices → Link a Device → Link with phone number</b></blockquote>\n\n` +
-    `<code>${code}</code>\n\n` +
-    `<i>⏳ Waiting for connection...</i>`
+    `<b>📱 PAIRING CODE</b>\n\n` +
+    `<blockquote>Number: <code>+${phone}</code>\n\n` +
+    `Code:\n<b><code>${code}</code></b>\n\n` +
+    `<i>WhatsApp → Linked Devices → Link a Device → Link with phone number → Enter code above</i>\n\n` +
+    `⏳ <i>Waiting for connection…</i></blockquote>`
   );
 }
 

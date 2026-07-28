@@ -97,10 +97,7 @@ export class TelegramBot {
       // 5. Session rename
       if (text && await handleSessionRenameText(id, text, this.sessionManager, reply)) return;
 
-      // 6. Pair session name input
-      if (text && await handlePairNameText(id, text, this.sessionManager, reply)) return;
-
-      // 7. Pair phone number input (code flow)
+      // 6. Pair phone number input
       if (text && await handlePairPhoneText(id, text, this.app, reply)) return;
 
       // 8. Registration domain/name steps for registered users re-entering flow

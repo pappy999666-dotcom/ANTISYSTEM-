@@ -1,0 +1,29 @@
+{
+  "users": {
+    "8831887192": {
+      "telegramId": 8831887192,
+      "displayName": "pappy",
+      "allocatedPort": 2001,
+      "commandPrefix": "!",
+      "language": "en",
+      "timezone": "UTC",
+      "notificationsEnabled": true,
+      "isBanned": false,
+      "registeredAt": 1785254925941,
+      "lastActiveAt": 1785255890849
+    }
+  },
+  "ports": {
+    "8831887192": {
+      "telegramId": 8831887192,
+      "port": 2001,
+      "allocatedAt": 1785254925941
+    }
+  },
+  "vpsConfig": {},
+  "forceJoin": {
+    "enabled": false,
+    "requiredChats": []
+  },
+  "broadcasts": {}
+}

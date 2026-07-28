@@ -31,15 +31,28 @@ export async function registrationGate(ctx: Context, next: NextFunction): Promis
   const id = ctx.from?.id;
   if (!id) return;
 
-  // Always allow /start through so registration can begin
+  // Always allow /start and commands through
   const text = ctx.message?.text ?? '';
-  if (text.startsWith('/start')) {
+  if (text.startsWith('/')) {
     await next();
     return;
   }
 
+  // Allow unregistered users through if they are mid-registration flow
   if (!telegramStore.isRegistered(id)) {
+    const step = telegramStore.getStep(id);
+    if (step === 'awaiting_name' || step === 'awaiting_domain') {
+      await next();
+      return;
+    }
     await ctx.reply('👋 Please use /start to register first.').catch(() => void 0);
+    return;
+  }
+
+  // Allow registered users through mid-pairing flow
+  const step = telegramStore.getStep(id);
+  if (step === 'awaiting_phone') {
+    await next();
     return;
   }
   await next();

@@ -36,7 +36,7 @@ import { logger } from '../logger/Logger';
 
 const log = logger.child('WebServer');
 const WEB_DIST = path.resolve('web/dist');
-const WEB_PORT = Number(process.env['WEB_PORT'] ?? 3000);
+const WEB_PORT = Number(process.env['WEB_PORT'] ?? 5000);
 
 export class WebServer {
   private readonly httpServer: http.Server;
@@ -111,7 +111,8 @@ export class WebServer {
     // Serve compiled frontend (production)
     if (fs.existsSync(WEB_DIST)) {
       app.use(express.static(WEB_DIST));
-      app.get('*', (req, res) => {
+      // SPA fallback — Express 5 compatible wildcard
+      app.get('/{*path}', (req, res) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/ws')) {
           res.sendFile(path.join(WEB_DIST, 'index.html'));
         }
